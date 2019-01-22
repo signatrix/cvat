@@ -55,6 +55,7 @@ services:
       - cvat_data:/home/django/data
       - cvat_keys:/home/django/keys
       - cvat_logs:/home/django/logs
+      - /home/cw7/Desktop/cvat/share:/home/django/share
 
 volumes:
   cvat_db:
