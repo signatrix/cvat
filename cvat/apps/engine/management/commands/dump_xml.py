@@ -15,11 +15,10 @@ class Command(BaseCommand):
         parser.add_argument('tid', nargs='+', type=int)
 
     def handle(self, *args, **options):
-        with transaction.atomic():
-            for tid in options['tid']:
-    
-                db_task = models.Task.objects.select_for_update().get(id=tid)
-                db_task.path = "/home/django/share"
-                annotation1 = annotation._AnnotationForTask(db_task)
-                annotation1.init_from_db()
-                annotation1.dump(annotation.FORMAT_XML, db_task, 'http', 'localhost:8080')
+        for tid in options['tid']:
+
+            db_task = models.Task.objects.get(id=tid)
+            db_task.path = "/home/django/share/annotations"
+            annotation1 = annotation._AnnotationForTask(db_task)
+            annotation1.init_from_db()
+            annotation1.dump(annotation.FORMAT_XML, 'http', 'localhost:8080', {})
