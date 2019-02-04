@@ -48,7 +48,7 @@ class Command(BaseCommand):
 
             if person_label_obj:
                 person_objects = list(filter(lambda x: x.job_id == job_id and x.label_id == person_label_obj.id, objectpaths))
-                person_count = len(person_objects)
+                persons_count = len(person_objects)
             else:
                 person_objects = []
                 persons_count = 'None'
