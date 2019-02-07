@@ -34,7 +34,7 @@ class Command(BaseCommand):
 
         pardir_and_vid_file = os.path.join(os.path.split(os.path.split(options['video_path'])[0])[1],os.path.basename(options['video_path']))
             
-        params = {  'data': "/" + pardir_and_vid_file, 
+        params = {  'data': "/" + options['video_path'], 
                     'labels': 'cart ~radio=type:empty,full ~checkbox=difficult:false person ~checkbox=difficult:false', 
                     'owner': User.objects.get(id=2), 
                     'z_order': 'false', 
