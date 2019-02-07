@@ -25,10 +25,10 @@ class Command(BaseCommand):
     help = 'Creates a task given a dataset'
 
     def add_arguments(self, parser):
-        parser.add_argument('video_path', type=str, required=True)
-        parser.add_argument('xml_path', type=str, required=False)
-        parser.add_argument('task_name', type=str, required=True)
-        parser.add_argument('wait', type=bool, default=False)
+        parser.add_argument('--video_path', type=str, required=True)
+        parser.add_argument('--xml_path', type=str, required=False)
+        parser.add_argument('--task_name', type=str, required=True)
+        parser.add_argument('--wait', type=bool, default=False)
 
     def handle(self, *args, **options):
 
