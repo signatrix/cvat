@@ -1,14 +1,8 @@
-
-# Copyright (C) 2018 Intel Corporation
-#
-# SPDX-License-Identifier: MIT
-
-from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 
-from ... import annotation
 from ... import models
+
 
 class Command(BaseCommand):
     help = 'Prints some database information'
@@ -23,14 +17,14 @@ class Command(BaseCommand):
         annotators = User.objects.all()
 
         tab = 4
-        name_width = min(max(map(lambda x: len(x.name),models.Task.objects.all())),80) + tab
+        name_width = min(max(map(lambda x: len(x.name), models.Task.objects.all())), 80) + tab
 
         print("{:<10} {:<{}} {:<12} {:<9} {:<11} {:<10} {:<23} {:<23} {:<10}".format('task id', 'task name', name_width, 'annotator', 'carts', 'persons', 'bboxes', 'created date', 'saved/updated at', 'status'))
 
         for task in models.Task.objects.all():
             try:
                 annotator_name = next(filter(lambda x: x.id == task.assignee_id, annotators)).username
-            except:
+            except Exception:
                 annotator_name = 'None'
 
             cart_label_obj = next(filter(lambda x: x.task_id == task.id and x.name == 'cart', labels), None)

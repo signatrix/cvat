@@ -1,18 +1,10 @@
-
-# Copyright (C) 2018 Intel Corporation
-#
-# SPDX-License-Identifier: MIT
-
 import json
 import xmltodict
 
-from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from ... import annotation
-from ... import models
 from ...log import slogger
 
-from xml.etree import ElementTree as ET
 
 class Command(BaseCommand):
     help = 'Uploads an XML File for a specific task'
@@ -29,7 +21,7 @@ class Command(BaseCommand):
         try:
             slogger.task[options['tid']].info("delete annotation request")
             annotation.clear_task(options['tid'])
-        except Exception as e:
+        except Exception:
             slogger.task[options['tid']].error("cannot delete annotation", exc_info=True)
 
 # with open("output.json", 'w') as f:
@@ -43,5 +35,5 @@ class Command(BaseCommand):
                 json_str = json.dumps(xml_dict, indent=4)
                 annotation.save_task(options['tid'], json_str)
 
-        except Exception as e:
+        except Exception:
             slogger.task[options['tid']].error("cannot save annotation", exc_info=True)

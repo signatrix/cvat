@@ -1,25 +1,15 @@
-
-# Copyright (C) 2018 Intel Corporation
-#
-# SPDX-License-Identifier: MIT
-
-import os
+import os.path
 import time
 import logging
-import rq
-
-import django_rq
-from django.db import transaction
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.conf import settings
 
-from ... import annotation
-from ... import models
 from ... import task
-from ...log import slogger
-
+from ...annotation import save_task
+from .update_task_data import Command as UpdateTaskData
 global_logger = logging.getLogger(__name__)
+
 
 class Command(BaseCommand):
     help = 'Creates a task given a dataset'
@@ -32,24 +22,25 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        pardir_and_vid_file = os.path.join(os.path.split(os.path.split(options['video_path'])[0])[1],os.path.basename(options['video_path']))
-            
-        params = {  'data': "/" + options['video_path'], 
-                    'labels': 'cart ~radio=type:empty,full ~checkbox=difficult:false person ~checkbox=difficult:false', 
-                    'owner': User.objects.get(id=2), 
-                    'z_order': 'false', 
-                    'storage': 'share', 
-                    'task_name': options['task_name'], 
-                    'flip_flag': 'false', 
-                    'bug_tracker_link': '' }
-    
+        # pardir_and_vid_file = os.path.join(os.path.split(os.path.split(options['video_path'])[0])[1],os.path.basename(options['video_path']))
+
+        tom = User.objects.get(id=2)
+        params = {'data': "/" + options['video_path'],
+                  'labels': 'cart ~radio=type:empty,full ~checkbox=difficult:false person ~checkbox=difficult:false',
+                  'owner': tom,
+                  'z_order': 'false',
+                  'storage': 'share',
+                  'task_name': options['task_name'],
+                  'flip_flag': 'false',
+                  'bug_tracker_link': ''}
+
         db_task = task.create_empty(params)
         target_paths = []
         source_paths = []
         upload_dir = db_task.get_upload_dirname()
         share_root = settings.SHARE_ROOT
 
-        share_path = params['data']                
+        # share_path = params['data']           
         relpath = os.path.normpath(params['data']).lstrip('/')
         if '..' in relpath.split(os.path.sep):
             raise Exception('Permission denied')
@@ -65,10 +56,13 @@ class Command(BaseCommand):
         task.create(db_task.id, params)
         print("Enqueued new Task with id: " + str(db_task.id))
 
-        log_path = db_task.get_log_path() 
+        xml_path = options.get('xml_path')
+        if xml_path:
+            UpdateTaskData.handle(None, {'xml_path': xml_path, 'task_name': options['task_name'})
+        log_path = db_task.get_log_path()
         status = task.check(db_task.id)
-        
-        while options['wait'] and not status['state'] in ["error", "created"]:
+
+        while options['wait'] and status['state'] not in ["error", "created"]:
             print("waiting...")
             status = task.check(db_task.id)
             time.sleep(10)
