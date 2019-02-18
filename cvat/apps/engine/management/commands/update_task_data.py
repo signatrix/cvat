@@ -408,12 +408,12 @@ class LabelsInfo:
         match = re.findall(regex, attrRow)
         if not match:
             raise ValueError('Can not parse attribute string: ' + attrRow)
-
+        attribute = match[0]
         return {
-            'mutable': match[1] == "~",
-            'type': match[2],
-            'name': match[3],
-            'values': self.strToValues(match[2], match[4])}
+            'mutable': attribute[0] == "~",
+            'type': attribute[1],
+            'name': attribute[2],
+            'values': self.strToValues(attribute[1], attribute[3])}
 
     def labelColorIdx(self, labelId):
         return self.self_colorIdxs[labelId]
