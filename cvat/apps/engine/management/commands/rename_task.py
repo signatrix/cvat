@@ -1,6 +1,13 @@
-from django.core.management.base import BaseCommand
-from ...models import Task
 
+# Copyright (C) 2018 Intel Corporation
+#
+# SPDX-License-Identifier: MIT
+
+from django.db import transaction
+from django.core.management.base import BaseCommand, CommandError
+from ... import annotation
+from ... import models
+from ...models import Task
 
 class Command(BaseCommand):
     help = 'Renames a task'
