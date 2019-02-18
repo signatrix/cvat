@@ -26,7 +26,7 @@ class Command(BaseCommand):
 
         tom = User.objects.get(id=2)
         params = {'data': "/" + options['video_path'],
-                  'labels': 'cart ~radio=type:empty,full ~checkbox=difficult:false person ~checkbox=difficult:false',
+                  'labels': 'cart ~radio=type:empty,full,unclear ~checkbox=difficult:false person ~checkbox=difficult:false',
                   'owner': tom,
                   'z_order': 'false',
                   'storage': 'share',

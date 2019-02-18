@@ -7,7 +7,7 @@ from cvat.apps.engine.models import Task
 from cvat.apps.engine.annotation import save_task
 from cvat.apps.engine.task import get  # , get_job
 
-# python3 manage.py update_task_data --xml_path="/home/django/share/test.xml" --task_name="bla"
+# python3 manage.py update_task_data --xml_path="/home/django/share/annotation_update_test/annotation_test.xml" --task_name="annotation_update_test"
 class Command(BaseCommand):
     help = 'Updates a given tasks annotation data'
 
@@ -305,8 +305,7 @@ class AnnotationParser:
         ybr = float(box.getAttribute('ybr'))
 
         if xtl < 0 or ytl < 0 or xbr < 0 or ybr < 0 or xtl > im_w or ytl > im_h or xbr > im_w or ybr > im_h:
-            return
-            # raise ValueError('Incorrect bb found in annotation file: xtl=' + str(xtl) + ' ytl=' + str(ytl) + ' xbr=' + str(xbr) + ' ybr=' + str(ybr) + '.\n Box out of range: ' + str(im_w) + 'x' + str(im_h))
+            raise ValueError('Incorrect bb found in annotation file: xtl=' + str(xtl) + ' ytl=' + str(ytl) + ' xbr=' + str(xbr) + ' ybr=' + str(ybr) + '.\n Box out of range: ' + str(im_w) + 'x' + str(im_h))
 
         if self.flipped:
             _xtl = im_w - xbr
@@ -346,8 +345,8 @@ class AnnotationParser:
         name = attrTag.getAttribute('name')
         attrId = self.labelsInfo.attrIdOf(labelId, name)
         if not attrId:
-            return (None, None)
-            # raise ValueError('An unknown attribute found in the annotation file: ' + name)
+            # return (None, None)
+            raise ValueError('An unknown attribute found in the annotation file: ' + name)
 
         attrInfo = self.labelsInfo.attrInfo(attrId)
         value = self.labelsInfo.strToValues(attrInfo['type'], attrTag.innerHTML)[0]
@@ -405,7 +404,7 @@ class LabelsInfo:
             self.self_colorIdxs[labelKey] = int(labelKey)
 
     def parseAttributeRow(self, attrRow):
-        regex = r"/([~@]{1})(.+)=(.+):(.*)/"
+        regex = r"([~@]{1})(.+)=(.+):(.*)"
         match = re.findall(regex, attrRow)
         if not match:
             raise ValueError('Can not parse attribute string: ' + attrRow)
