@@ -17,9 +17,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         task = Task.objects.filter(task_name=options['task_name'])
 
-        _, interpolationData = self.parseFile(options.get('xml_path'), task.data)
+        output = self.parseFile(options.get('xml_path'), task.data)
 
-        save_task(task.id, json.loads(interpolationData))
+        save_task(task.id, json.loads(output))
 
     def parseFile(self, xml_path, task_data):
 
@@ -33,7 +33,7 @@ class Command(BaseCommand):
         parsed = annotationParser.parse(xml_path)
 
         exportData = createExportContainer()
-        exportData['create'] = parsed
+        exportData['create'] = parsed['interpolationData']
 
         return exportData
 
@@ -110,7 +110,7 @@ class AnnotationParser:
 
                 if len(shapes) == 2:
                     if int(shapes[1].getAttribute('frame')) - int(shapes[0].getAttribute('frame')) == 1 and not shapes[0].getAttribute('outside') and shapes[1].getAttribute('outside'):
-                        parsed[shapetype_] = []  # pseudo interpolation track (actually is annotation)
+                        parsed[shapetype_] = {}  # pseudo interpolation track (actually is annotation)
 
             type_ = None
             target = None
@@ -191,20 +191,16 @@ class AnnotationParser:
         return data
 
     def parseAnnotationData(self, xml):
-        data = {
-            'boxes': [],
-            'polygons': [],
-            'polylines': [],
-            'points': []
-        }
+        data = {'boxes': [],
+                'polygons': [],
+                'polylines': [],
+                'points': []}
 
         tracks = xml.getElementsByTagName('track')
-        parsed = {
-            'boxes': self.getShapeFromPath('box', tracks),
-            'polygons': self.getShapeFromPath('polygon', tracks),
-            'polylines': self.getShapeFromPath('polyline', tracks),
-            'points': self.getShapeFromPath('points', tracks),
-        }
+        parsed = {'boxes': self.getShapeFromPath('box', tracks),
+                  'polygons': self.getShapeFromPath('polygon', tracks),
+                  'polylines': self.getShapeFromPath('polyline', tracks),
+                  'points': self.getShapeFromPath('points', tracks)}
 
         images = xml.getElementsByTagName('image')
         for image in images:
@@ -239,21 +235,19 @@ class AnnotationParser:
 
                 attributeList = self.getAttributeList(shape, labelId)
 
-                if (shape_type == 'boxes'):
+                if shape_type == 'boxes':
                     boxPosition = self.getBoxPosition(shape, frame)
-                    data.boxes.append({
-                        'label_id': labelId,
-                        'group_id': +groupId,
-                        'frame': frame,
-                        'occluded': boxPosition['occluded'],
-                        'xtl': boxPosition['xtl'],
-                        'ytl': boxPosition['ytl'],
-                        'xbr': boxPosition['xbr'],
-                        'ybr': boxPosition['ybr'],
-                        'z_order': boxPosition['z_order'],
-                        'attributes': attributeList,
-                        'id': self.idGen.next(),
-                    })
+                    data.boxes.append({'label_id': labelId,
+                                       'group_id': +groupId,
+                                       'frame': frame,
+                                       'occluded': boxPosition['occluded'],
+                                       'xtl': boxPosition['xtl'],
+                                       'ytl': boxPosition['ytl'],
+                                       'xbr': boxPosition['xbr'],
+                                       'ybr': boxPosition['ybr'],
+                                       'z_order': boxPosition['z_order'],
+                                       'attributes': attributeList,
+                                       'id': self.idGen.next()})
                 else:
                     continue
                     # polyPosition = self.getPolyPosition(shape, frame)
@@ -305,7 +299,7 @@ class AnnotationParser:
         # points = PolyShapeModel.convertStringToNumberArray(points)
 
         for point in points:
-            if (point.x < 0 or point.y < 0 or point.x > im_w or point.y > im_h):
+            if point.x < 0 or point.y < 0 or point.x > im_w or point.y > im_h:
                 raise ValueError('Incorrect point found in annotation file x=' + point.x + ' y=' + point.y + '. \nPoint out of range ' + im_w + 'x' + im_h)
 
             if self.flipped:
@@ -335,7 +329,7 @@ class AnnotationParser:
             else:
                 minval = int(attrInfo['values'][0])
                 maxval = int(attrInfo['values'][1])
-                if (int(value) < minval or int(value) > maxval):
+                if int(value) < minval or int(value) > maxval:
                     raise ValueError('Number attribute value out of range for ' + name + ' attribute: ' + value)
         return (attrId, value)
 
@@ -357,7 +351,7 @@ class AnnotationParser:
         xml = minidom.parse(xml_path)
         interpolationData = self.parseInterpolationData(xml)
         annotationData = {}  # self.parseAnnotationData(xml)
-        return annotationData, interpolationData
+        return {'annotationData': annotationData, 'interpolationData': interpolationData}
 
 
 class LabelsInfo:
