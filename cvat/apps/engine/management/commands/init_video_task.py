@@ -5,8 +5,8 @@ from django.core.management.base import BaseCommand
 from django.contrib.auth.models import User
 from django.conf import settings
 
-from ... import task
-from ...annotation import save_task
+import cvat.apps.engine.task
+from cvat.apps.engine.annotation import save_task
 from .update_task_data import Command as UpdateTaskData
 global_logger = logging.getLogger(__name__)
 

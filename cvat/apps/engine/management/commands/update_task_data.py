@@ -3,10 +3,11 @@ import functools
 import re
 from xml.dom import minidom
 from django.core.management.base import BaseCommand
-from ...models import Task
-from ...annotation import save_task
+from cvat.apps.engine.models import Task
+from cvat.apps.engine.annotation import save_task
+from cvat.apps.engine.task import get  # , get_job
 
-
+# python3 manage.py update_task_data --xml_path="/home/django/share/test.xml" --task_name="bla"
 class Command(BaseCommand):
     help = 'Updates a given tasks annotation data'
 
@@ -15,26 +16,27 @@ class Command(BaseCommand):
         parser.add_argument('--task_name', type=str, required=True)
 
     def handle(self, *args, **options):
-        task = Task.objects.filter(task_name=options['task_name'])
-
-        output = self.parseFile(options.get('xml_path'), task.data)
-
-        save_task(task.id, json.loads(output))
+        task = Task.objects.filter(name=options['task_name']).first()
+        if not task:
+            raise ValueError('No task with name ' + options['task_name'] )
+        # job_data = get_job(task.jobs.first().id)
+        task_data = get(task.id)
+        output = self.parseFile(options['xml_path'], task_data)
+        print(output)
+        save_task(task.id, json.dumps(output))
 
     def parseFile(self, xml_path, task_data):
 
         annotationParser = AnnotationParser({'start': 0,
-                                             'stop': task_data.size,
-                                             'image_meta_data': task_data.image_meta_data,
-                                             'flipped': task_data.flipped},
-                                            LabelsInfo(task_data.spec),
+                                             'stop': task_data['size'],
+                                             'image_meta_data': task_data['image_meta_data'],
+                                             'flipped': task_data['flipped']},
+                                            LabelsInfo(task_data['spec']),
                                             ConstIdGenerator(-1))
 
         parsed = annotationParser.parse(xml_path)
-
         exportData = createExportContainer()
         exportData['create'] = parsed['interpolationData']
-
         return exportData
 
 
@@ -77,14 +79,14 @@ class IncrementIdGenerator:
 
 class AnnotationParser:
     def __init__(self, job, labelsInfo, idGenerator):
-        self.startFrame = job.start
-        self.stopFrame = job.stop
-        self.flipped = job.flipped
-        self.im_meta = job.image_meta_data
+        self.startFrame = job['start']
+        self.stopFrame = job['stop']
+        self.flipped = job['flipped']
+        self.im_meta = job['image_meta_data']
         self.labelsInfo = labelsInfo
         self.idGen = idGenerator
 
-    def parse_interpolation_data(self, xml):
+    def parseInterpolationData(self, xml):
         data = {'box_paths': [],
                 'polygon_paths': [],
                 'polyline_paths': [],
@@ -94,7 +96,7 @@ class AnnotationParser:
         for track in tracks:
             labelId = self.labelsInfo.labelIdOf(track.getAttribute('label'))
             groupId = track.getAttribute('group_id') or '0'
-            if not labelId:
+            if labelId is None:
                 raise ValueError('An unknown label found in the annotation file: ' + xml)
 
             parsed = {'boxes': track.getElementsByTagName('box'),
@@ -105,7 +107,7 @@ class AnnotationParser:
             for shapetype_ in parsed:
                 shapes = sorted(parsed[shapetype_], key=functools.cmp_to_key(lambda x, y: int(x.getAttribute('frame')) - int(y.getAttribute('frame'))))
 
-                while shapes and shapes[0].get('outside'):
+                while shapes and shapes[0].getAttribute('outside'):
                     shapes.pop(0)
 
                 if len(shapes) == 2:
@@ -134,7 +136,7 @@ class AnnotationParser:
                     'frame': int(parsed[type_][0].getAttribute('frame')),
                     'attributes': [],
                     'shapes': [],
-                    'id': self.idGen_.next()}
+                    'id': self.idGen.next()}
 
             for shape in parsed[type_]:
                 keyFrame = int(shape.getAttribute('keyframe'))
@@ -166,15 +168,16 @@ class AnnotationParser:
 
                     if type_ == 'boxes':
                         boxPosition = self.getBoxPosition(shape, max(min(frame, self.stopFrame), self.startFrame))
-                        path['shapes'].append({'frame': frame,
-                                               'occluded': boxPosition['occluded'],
-                                               'outside': outside,
-                                               'xtl': boxPosition['xtl'],
-                                               'ytl': boxPosition['ytl'],
-                                               'xbr': boxPosition['xbr'],
-                                               'ybr': boxPosition['ybr'],
-                                               'z_order': boxPosition['z_order'],
-                                               'attributes': shapeAttributes})
+                        if boxPosition:
+                            path['shapes'].append({'frame': frame,
+                                                'occluded': boxPosition['occluded'],
+                                                'outside': outside,
+                                                'xtl': boxPosition['xtl'],
+                                                'ytl': boxPosition['ytl'],
+                                                'xbr': boxPosition['xbr'],
+                                                'ybr': boxPosition['ybr'],
+                                                'z_order': boxPosition['z_order'],
+                                                'attributes': shapeAttributes})
                     else:
                         continue
                         # [points, occluded, z_order] = self.getPolyPosition(shape, max(min(frame, self.stopFrame), self.startFrame))
@@ -230,14 +233,14 @@ class AnnotationParser:
 
                 labelId = self.labelsInfo.labelIdOf(shape.getAttribute('label'))
                 groupId = shape.getAttribute('group_id') or "0"
-                if not labelId:
+                if labelId is None:
                     raise ValueError('An unknown label found in the annotation file: ' + shape.getAttribute('label'))
 
                 attributeList = self.getAttributeList(shape, labelId)
 
                 if shape_type == 'boxes':
                     boxPosition = self.getBoxPosition(shape, frame)
-                    data.boxes.append({'label_id': labelId,
+                    data['boxes'].append({'label_id': labelId,
                                        'group_id': +groupId,
                                        'frame': frame,
                                        'occluded': boxPosition['occluded'],
@@ -261,21 +264,43 @@ class AnnotationParser:
                     #     'attributes': attributeList,
                     #     'id': self.idGen.next(),
                     # })
-
         return data
+
+    def getShapeFromPath(self, shape_type, tracks):
+        result = []
+        for track in tracks:
+            label = track.getAttribute('label')
+            group_id = track.getAttribute('group_id') or '0'
+            labelId = self.labelsInfo.labelIdOf(label)
+            if labelId is None:
+                raise ValueError('An unknown label found in the annotation file: ' + label)
+
+            shapes = list(track.getElementsByTagName(shape_type))
+            shapes = sorted(shapes, key=functools.cmp_to_key(lambda x, y: int(x.getAttribute('frame')) - int(y.getAttribute('frame'))))
+
+            while shapes and int(shapes[0].getAttribute('outside')):
+                shapes.pop(0)
+
+            if len(shapes) == 2:
+                if shapes[1].getAttribute('frame') - shapes[0].getAttribute('frame') == 1 and not int(shapes[0].getAttribute('outside')) and int(shapes[1].getAttribute('outside')):
+                    shapes[0].setAttribute('label', label)
+                    shapes[0].setAttribute('group_id', group_id)
+                    result.append(shapes[0])
+        return result
 
     def getBoxPosition(self, box, frame):
         frame = min(frame - self.startFrame, len(self.im_meta['original_size']) - 1)
-        im_w = self.im_meta['original_size'][frame].width
-        im_h = self.im_meta['original_size'][frame].height
+        im_w = self.im_meta['original_size'][frame]['width']
+        im_h = self.im_meta['original_size'][frame]['height']
 
-        xtl = int(box.getAttribute('xtl'))
-        ytl = int(box.getAttribute('ytl'))
-        xbr = int(box.getAttribute('xbr'))
-        ybr = int(box.getAttribute('ybr'))
+        xtl = float(box.getAttribute('xtl'))
+        ytl = float(box.getAttribute('ytl'))
+        xbr = float(box.getAttribute('xbr'))
+        ybr = float(box.getAttribute('ybr'))
 
         if xtl < 0 or ytl < 0 or xbr < 0 or ybr < 0 or xtl > im_w or ytl > im_h or xbr > im_w or ybr > im_h:
-            raise ValueError('Incorrect bb found in annotation file: xtl=' + xtl + ' ytl=' + ytl + ' xbr=' + xbr + ' ybr=' + ybr + '.\n Box out of range: ' + im_w + 'x' + im_h)
+            return
+            # raise ValueError('Incorrect bb found in annotation file: xtl=' + str(xtl) + ' ytl=' + str(ytl) + ' xbr=' + str(xbr) + ' ybr=' + str(ybr) + '.\n Box out of range: ' + str(im_w) + 'x' + str(im_h))
 
         if self.flipped:
             _xtl = im_w - xbr
@@ -292,9 +317,9 @@ class AnnotationParser:
         return {'xtl': xtl, 'ytl': ytl, 'xbr': xbr, 'ybr': ybr, 'occluded': occluded, 'z_order': int(z_order)}
 
     def getPolyPosition(self, shape, frame):
-        frame = min(frame - self.startFrame, self.im_meta['original_size'].length - 1)
-        im_w = self.im_meta['original_size'][frame].width
-        im_h = self.im_meta['original_size'][frame].height
+        frame = min(frame - self.startFrame, len(self.im_meta['original_size']) - 1)
+        im_w = self.im_meta['original_size'][frame]['width']
+        im_h = self.im_meta['original_size'][frame]['height']
         points = shape.getAttribute('points').split('').join(' ')
         # points = PolyShapeModel.convertStringToNumberArray(points)
 
@@ -315,7 +340,8 @@ class AnnotationParser:
         name = attrTag.getAttribute('name')
         attrId = self.labelsInfo.attrIdOf(labelId, name)
         if not attrId:
-            raise ValueError('An unknown attribute found in the annotation file: ' + name)
+            return (None, None)
+            # raise ValueError('An unknown attribute found in the annotation file: ' + name)
 
         attrInfo = self.labelsInfo.attrInfo(attrId)
         value = self.labelsInfo.strToValues(attrInfo['type'], attrTag.innerHTML)[0]
@@ -338,7 +364,8 @@ class AnnotationParser:
         attributes = shape.getElementsByTagName('attribute')
         for attribute in attributes:
             (attrId, value) = self.getAttribute(labelId, attribute)
-            attributeDict[attrId] = value
+            if attrId and value:
+                attributeDict[attrId] = value
 
         attributeList = []
         for attrId in attributeDict:
@@ -360,12 +387,12 @@ class LabelsInfo:
         self.self_attributes = {}
         self.self_colorIdxs = {}
 
-        for labelKey in job.labels:
-            label = {'name': job.labels[labelKey],
+        for labelKey in job['labels']:
+            label = {'name': job['labels'][labelKey],
                      'attributes': {}}
 
-            for attrKey in job.attributes[labelKey]:
-                label['attributes'][attrKey] = self.parseAttributeRow.call(self, job.attributes[labelKey][attrKey])
+            for attrKey in job['attributes'][labelKey]:
+                label['attributes'][attrKey] = self.parseAttributeRow(job['attributes'][labelKey][attrKey])
                 self.self_attributes[attrKey] = label['attributes'][attrKey]
 
             self.self_labels[labelKey] = label
@@ -393,11 +420,11 @@ class LabelsInfo:
     def normalize(self):
         labels = ""
         for labelId in self.self_labels:
-            labels += " " + self.self_labels[labelId].name
+            labels += " " + self.self_labels[labelId]['name']
             for attrId in self.self_labels[labelId]['attributes']:
                 attr = self.self_labels[labelId]['attributes'][attrId]
                 labels += ' ' + ("~" if attr['mutable'] else "@")
-                labels += attr.type + '=' + attr.name + ':'
+                labels += attr['type'] + '=' + attr['name'] + ':'
                 labels += ','.join(map((lambda x: "'" + x + "'" if ' ' in x else x), attr['values']))
         return labels.strip()
 
@@ -410,8 +437,8 @@ class LabelsInfo:
     def labelAttributes(self, labelId):
         attributes = {}
         if labelId in self.self_labels:
-            for attrId in self.self_labels[labelId].attributes:
-                attributes[attrId] = self.self_labels[labelId].attributes[attrId]['name']
+            for attrId in self.self_labels[labelId]['attributes']:
+                attributes[attrId] = self.self_labels[labelId]['attributes'][attrId]['name']
         return attributes
 
     def attributes(self):
@@ -436,7 +463,7 @@ class LabelsInfo:
                 return int(labelId)
 
     def attrIdOf(self, labelId, name):
-        attributes = self.selflabelAttributes(labelId)
+        attributes = self.labelAttributes(labelId)
         for attrId in attributes:
             if self.self_attributes[attrId]['name'] == name:
                 return int(attrId)
