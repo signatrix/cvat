@@ -58,7 +58,7 @@ class Command(BaseCommand):
 
         xml_path = options.get('xml_path')
         if xml_path:
-            UpdateTaskData.handle(None, {'xml_path': xml_path, 'task_name': options['task_name'})
+            UpdateTaskData.handle(None, {'xml_path': xml_path, 'task_name': options['task_name']})
         log_path = db_task.get_log_path()
         status = task.check(db_task.id)
 

@@ -18,6 +18,12 @@ class Command(BaseCommand):
                 os.makedirs(options['dump_folder'])
 
             db_task = models.Task.objects.get(id=tid)
+            db_task.owner = db_task.assignee
+
+            bot_id = next(filter(lambda x: x.username == 'bot', User.objects.all()).id
+            db_task.assignee = bot_id
+            task.save() 
+
             db_task.path = options['dump_folder']
             annotation1 = annotation._AnnotationForTask(db_task)
             annotation1.init_from_db()
