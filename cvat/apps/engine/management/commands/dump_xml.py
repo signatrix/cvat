@@ -1,6 +1,7 @@
 import os
 
 from django.core.management.base import BaseCommand
+from django.contrib.auth.models import User
 from ... import annotation
 from ... import models
 
@@ -19,10 +20,8 @@ class Command(BaseCommand):
 
             db_task = models.Task.objects.get(id=tid)
             db_task.owner = db_task.assignee
-
-            bot_id = next(filter(lambda x: x.username == 'bot', User.objects.all()).id
-            db_task.assignee = bot_id
-            task.save() 
+            db_task.assignee = User.objects.get(username='bot')
+            db_task.save() 
 
             db_task.path = options['dump_folder']
             annotation1 = annotation._AnnotationForTask(db_task)
