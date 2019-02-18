@@ -19,11 +19,9 @@ class Command(BaseCommand):
         task = Task.objects.filter(name=options['task_name']).first()
         if not task:
             raise ValueError('No task with name ' + options['task_name'] )
-        # job_data = get_job(task.jobs.first().id)
         task_data = get(task.id)
         output = self.parseFile(options['xml_path'], task_data)
-        print(output)
-        save_task(task.id, json.dumps(output))
+        save_task(task.id, output)
 
     def parseFile(self, xml_path, task_data):
 
@@ -87,10 +85,14 @@ class AnnotationParser:
         self.idGen = idGenerator
 
     def parseInterpolationData(self, xml):
-        data = {'box_paths': [],
-                'polygon_paths': [],
-                'polyline_paths': [],
-                'points_paths': []}
+        data = {"boxes": [],
+                "box_paths": [],
+                "points": [],
+                "points_paths": [],
+                "polygons": [],
+                "polygon_paths": [],
+                "polylines": [],
+                "polyline_paths": []}
 
         tracks = xml.getElementsByTagName('track')
         for track in tracks:
@@ -194,10 +196,14 @@ class AnnotationParser:
         return data
 
     def parseAnnotationData(self, xml):
-        data = {'boxes': [],
-                'polygons': [],
-                'polylines': [],
-                'points': []}
+        data = {"boxes": [],
+                "box_paths": [],
+                "points": [],
+                "points_paths": [],
+                "polygons": [],
+                "polygon_paths": [],
+                "polylines": [],
+                "polyline_paths": []}
 
         tracks = xml.getElementsByTagName('track')
         parsed = {'boxes': self.getShapeFromPath('box', tracks),
