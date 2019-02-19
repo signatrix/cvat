@@ -1,6 +1,7 @@
 from django.core.management.base import BaseCommand
 from cvat.apps.engine.models import Task
 
+
 class Command(BaseCommand):
     help = 'Renames a task'
 

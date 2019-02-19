@@ -1,13 +1,15 @@
+import logging
 import os.path
 import time
-import logging
-from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
+
 from django.conf import settings
+from django.contrib.auth.models import User
+from django.core.management.base import BaseCommand
 
 import cvat.apps.engine.task
 from cvat.apps.engine.annotation import save_task
 from .update_task_data import Command as UpdateTaskData
+from ... import task
 global_logger = logging.getLogger(__name__)
 
 
@@ -22,11 +24,11 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
 
-        # pardir_and_vid_file = os.path.join(os.path.split(os.path.split(options['video_path'])[0])[1],os.path.basename(options['video_path']))
-
         tom = User.objects.get(id=2)
         params = {'data': "/" + options['video_path'],
                   'labels': 'cart ~radio=type:empty,full,unclear ~checkbox=difficult:false person ~checkbox=difficult:false',
+                  'labels': 'cart ~radio=type:empty,full \
+                  ~checkbox=difficult:false person ~checkbox=difficult:false',
                   'owner': tom,
                   'z_order': 'false',
                   'storage': 'share',
@@ -40,7 +42,6 @@ class Command(BaseCommand):
         upload_dir = db_task.get_upload_dirname()
         share_root = settings.SHARE_ROOT
 
-        # share_path = params['data']           
         relpath = os.path.normpath(params['data']).lstrip('/')
         if '..' in relpath.split(os.path.sep):
             raise Exception('Permission denied')
@@ -58,7 +59,8 @@ class Command(BaseCommand):
 
         xml_path = options.get('xml_path')
         if xml_path:
-            UpdateTaskData.handle(None, {'xml_path': xml_path, 'task_name': options['task_name']})
+            UpdateTaskData.handle(None, {'xml_path': xml_path,
+                                         'task_name': options['task_name']})
         log_path = db_task.get_log_path()
         status = task.check(db_task.id)
 
