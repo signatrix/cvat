@@ -1,12 +1,15 @@
 import logging
 import os.path
 import time
+
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
-from cvat.apps.engine import task
+import cvat.apps.engine.task
+from cvat.apps.engine.annotation import save_task
 from .update_task_data import Command as UpdateTaskData
+from ... import task
 global_logger = logging.getLogger(__name__)
 
 
@@ -20,9 +23,12 @@ class Command(BaseCommand):
         parser.add_argument('--wait', type=bool, default=False)
 
     def handle(self, *args, **options):
-        tom = User.objects.get(id=2).first()
+
+        tom = User.objects.get(id=2)
         params = {'data': "/" + options['video_path'],
                   'labels': 'cart ~radio=type:empty,full,unclear ~checkbox=difficult:false person ~checkbox=difficult:false',
+                  'labels': 'cart ~radio=type:empty,full \
+                  ~checkbox=difficult:false person ~checkbox=difficult:false',
                   'owner': tom,
                   'z_order': 'false',
                   'storage': 'share',

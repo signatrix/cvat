@@ -1,9 +1,10 @@
 import os
+
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
-from cvat.apps.engine.models import Task
-from cvat.apps.engine.annotation import _AnnotationForTask, FORMAT_XML
+from ... import annotation
+from ... import models
 
 
 class Command(BaseCommand):
@@ -13,7 +14,6 @@ class Command(BaseCommand):
         parser.add_argument('--tid', nargs='+', type=int)
         parser.add_argument('--dump_folder', type=str,
                             default="/home/django/share/annotation_tesco")
-        parser.add_argument('--user', type=str, default="bot")
 
     def handle(self, *args, **options):
         for tid in options['tid']:
@@ -21,12 +21,13 @@ class Command(BaseCommand):
             if not os.path.exists(options['dump_folder']):
                 os.makedirs(options['dump_folder'])
 
-            db_task = Task.objects.get(id=tid).first()
+            db_task = models.Task.objects.get(id=tid)
             db_task.owner = db_task.assignee
-            db_task.assignee = User.objects.get(username=options['user']).first()
+            db_task.assignee = User.objects.get(username='bot')
             db_task.save()
 
             db_task.path = options['dump_folder']
-            annotation = _AnnotationForTask(db_task)
-            annotation.init_from_db()
-            annotation.dump(FORMAT_XML, 'http', 'localhost:8080', {})
+            annotation1 = annotation._AnnotationForTask(db_task)
+            annotation1.init_from_db()
+            annotation1.dump(annotation.FORMAT_XML, 'http', 'localhost:8080',
+                                                    {})

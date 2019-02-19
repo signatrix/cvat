@@ -1,12 +1,11 @@
+import json
 import functools
 import re
-from django.core.management.base import BaseCommand
 from xml.dom import minidom
-
+from django.core.management.base import BaseCommand
 from cvat.apps.engine.models import Task
 from cvat.apps.engine.annotation import save_task
 from cvat.apps.engine.task import get  # , get_job
-
 
 # python3 manage.py update_task_data --xml_path="/home/django/share/annotation_update_test/annotation_test.xml" --task_name="annotation_update_test"
 class Command(BaseCommand):
@@ -19,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         task = Task.objects.filter(name=options['task_name']).first()
         if not task:
-            raise ValueError('No task with name ' + options['task_name'])
+            raise ValueError('No task with name ' + options['task_name'] )
         task_data = get(task.id)
         output = self.parseFile(options['xml_path'], task_data)
         save_task(task.id, output)
@@ -173,14 +172,14 @@ class AnnotationParser:
                         boxPosition = self.getBoxPosition(shape, max(min(frame, self.stopFrame), self.startFrame))
                         if boxPosition:
                             path['shapes'].append({'frame': frame,
-                                                   'occluded': boxPosition['occluded'],
-                                                   'outside': outside,
-                                                   'xtl': boxPosition['xtl'],
-                                                   'ytl': boxPosition['ytl'],
-                                                   'xbr': boxPosition['xbr'],
-                                                   'ybr': boxPosition['ybr'],
-                                                   'z_order': boxPosition['z_order'],
-                                                   'attributes': shapeAttributes})
+                                                'occluded': boxPosition['occluded'],
+                                                'outside': outside,
+                                                'xtl': boxPosition['xtl'],
+                                                'ytl': boxPosition['ytl'],
+                                                'xbr': boxPosition['xbr'],
+                                                'ybr': boxPosition['ybr'],
+                                                'z_order': boxPosition['z_order'],
+                                                'attributes': shapeAttributes})
                     else:
                         continue
                         # [points, occluded, z_order] = self.getPolyPosition(shape, max(min(frame, self.stopFrame), self.startFrame))
@@ -248,16 +247,16 @@ class AnnotationParser:
                 if shape_type == 'boxes':
                     boxPosition = self.getBoxPosition(shape, frame)
                     data['boxes'].append({'label_id': labelId,
-                                          'group_id': +groupId,
-                                          'frame': frame,
-                                          'occluded': boxPosition['occluded'],
-                                          'xtl': boxPosition['xtl'],
-                                          'ytl': boxPosition['ytl'],
-                                          'xbr': boxPosition['xbr'],
-                                          'ybr': boxPosition['ybr'],
-                                          'z_order': boxPosition['z_order'],
-                                          'attributes': attributeList,
-                                          'id': self.idGen.next()})
+                                       'group_id': +groupId,
+                                       'frame': frame,
+                                       'occluded': boxPosition['occluded'],
+                                       'xtl': boxPosition['xtl'],
+                                       'ytl': boxPosition['ytl'],
+                                       'xbr': boxPosition['xbr'],
+                                       'ybr': boxPosition['ybr'],
+                                       'z_order': boxPosition['z_order'],
+                                       'attributes': attributeList,
+                                       'id': self.idGen.next()})
                 else:
                     continue
                     # polyPosition = self.getPolyPosition(shape, frame)

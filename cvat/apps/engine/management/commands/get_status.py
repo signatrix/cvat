@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from cvat.apps.engine.models import Job, Label, ObjectPath, Segment, Task, TrackedBox
+from ... import models
 
 
 class Command(BaseCommand):
@@ -20,10 +20,11 @@ class Command(BaseCommand):
                             help='only get completed')
 
     def handle(self, *args, **options):
+
         if options['completed']:
-            task_query_set = Task.objects.filter(status='completed').all().order_by('-id')
+            task_query_set = models.Task.objects.filter(status='completed').order_by('-id')
         else:
-            task_query_set = Task.objects.all().order_by('-id')
+            task_query_set = models.Task.objects.all().order_by('-id')
 
         if options['quiet']:
             for task in task_query_set:
@@ -31,7 +32,7 @@ class Command(BaseCommand):
             return
 
         tab = 4
-        name_width = min(max(map(lambda task: len(task.name), task_query_set)), 80) + tab
+        name_width = min(max(map(lambda x: len(x.name), models.Task.objects.all())), 80) + tab
 
         print("{:<10} {:<{}} {:<12} {:<9} {:<11} {:<10} {:<23} {:<23} {:<10}".format('TASK ID', 'TASK NAME', name_width, 'ANNOTATOR', 'CARTS', 'PERSONS',
                                                                                      'BBOXES', 'CREATED AT', 'SAVED/UPDATED AT', 'STATUS'))
@@ -44,32 +45,32 @@ class Command(BaseCommand):
             except Exception:
                 annotator_name = 'None'
 
-            cart_label_obj = Label.objects.filter(name='cart', task=task).first()
-            person_label_obj = Label.objects.filter(name='person', task=task).first()
+            cart_label_obj = models.Label.objects.filter(name='cart', task=task).first()
+            person_label_obj = models.Label.objects.filter(name='person', task=task).first()
 
-            job = Job.objects.filter(segment=Segment.objects.filter(task=task).first()).first()
+            job = models.Job.objects.filter(segment=models.Segment.objects.filter(task=task).first()).first()
 
             if cart_label_obj:
-                cart_objects = list(ObjectPath.objects.filter(job=job, label=cart_label_obj).all())
+                cart_objects = list(models.ObjectPath.objects.filter(job=job, label=cart_label_obj))
                 carts_count = len(cart_objects)
             else:
                 cart_objects = []
                 carts_count = 'None'
 
             if person_label_obj:
-                person_objects = list(ObjectPath.objects.filter(job=job, label=person_label_obj).all())
+                person_objects = list(models.ObjectPath.objects.filter(job=job, label=person_label_obj))
                 persons_count = len(person_objects)
             else:
                 person_objects = []
                 persons_count = 'None'
 
             track_ids = list(map(lambda x: x.id, cart_objects + person_objects))
-            bboxes = TrackedBox.objects.filter(track_id__in=track_ids).count()
+            bboxes = models.TrackedBox.objects.filter(track_id__in=track_ids).count()
 
             table_content.append((task.id, task.name, name_width, annotator_name, carts_count, persons_count, bboxes,
                                   task.created_date.strftime('%Y-%m-%d %H:%M:%S'), task.updated_date.strftime('%Y-%m-%d %H:%M:%S'), task.status))
 
-        table_content = sorted(table_content, key=lambda x: x[options['sort_by']], reverse=options['desc'])
+        table_content_sorted = sorted(table_content, key=lambda x: x[options['sort_by']], reverse=options['desc'])
 
-        for row in table_content:
+        for row in table_content_sorted:
             print("{:<10} {:<{}} {:<12} {:<9} {:<11} {:<10} {:<23} {:<23} {:<10}".format(*row))
