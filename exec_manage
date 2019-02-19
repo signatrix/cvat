@@ -1,0 +1,1 @@
+docker-compose exec cvat python3 manage.py "$@"
