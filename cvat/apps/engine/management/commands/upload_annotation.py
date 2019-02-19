@@ -2,10 +2,11 @@ import json
 import xmltodict
 
 from django.core.management.base import BaseCommand
-from ... import annotation
+from cvat.apps.engine.annotation import clear_task, save_task
 from ...log import slogger
 
 
+# DEPRECATED (?)
 class Command(BaseCommand):
     help = 'Uploads an XML File for a specific task'
 
@@ -20,12 +21,9 @@ class Command(BaseCommand):
         # delete old annotations
         try:
             slogger.task[options['tid']].info("delete annotation request")
-            annotation.clear_task(options['tid'])
+            clear_task(options['tid'])
         except Exception:
             slogger.task[options['tid']].error("cannot delete annotation", exc_info=True)
-
-# with open("output.json", 'w') as f:
-#     f.write(jsonString)
 
         try:
             slogger.task[options['tid']].info("save annotation request")
@@ -33,7 +31,7 @@ class Command(BaseCommand):
                 xml_dict = xmltodict.parse(f.read())
                 print(xml_dict)
                 json_str = json.dumps(xml_dict, indent=4)
-                annotation.save_task(options['tid'], json_str)
+                save_task(options['tid'], json_str)
 
         except Exception:
             slogger.task[options['tid']].error("cannot save annotation", exc_info=True)
