@@ -1,4 +1,6 @@
-from django.contrib.auth.models import Task, User
+from cvat.apps.engine.models import Task
+
+from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
 from ... import task
