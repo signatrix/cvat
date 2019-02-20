@@ -2,7 +2,7 @@ from django.core.management.base import BaseCommand
 
 from cvat.apps.engine.models import Task
 
-
+# python3 manage.py rename_task --task_name='bla' --new_name='blub'
 class Command(BaseCommand):
     help = 'Renames a task'
 
@@ -11,7 +11,7 @@ class Command(BaseCommand):
         parser.add_argument('--new_name', type=str)
 
     def handle(self, *args, **options):
-        task = Task.objects.filter(task_name=options['task_name'])
+        task = Task.objects.filter(name=options['task_name']).first()
         if task:
             task.name = options['new_name']
             task.save()
