@@ -17,17 +17,20 @@ class Command(BaseCommand):
         parser.add_argument('--user', type=str, default="bot")
 
     def handle(self, *args, **options):
+        if not os.path.exists(options['dump_folder']):
+            os.makedirs(options['dump_folder'])
         for tid in options['tid']:
-
-            if not os.path.exists(options['dump_folder']):
-                os.makedirs(options['dump_folder'])
 
             db_task = Task.objects.get(id=tid)
             db_task.owner = db_task.assignee
             db_task.assignee = User.objects.get(username=options['user'])
             db_task.save()
 
-            db_task.path = options['dump_folder']
-            annotation = _AnnotationForTask(db_task)
-            annotation.init_from_db()
-            annotation.dump(FORMAT_XML, 'http', 'localhost:8080', {})
+            dump_annotation_for_task(db_task, options['dump_folder'])
+
+
+def dump_annotation_for_task(task, dump_folder):
+    task.path = dump_folder
+    annotation = _AnnotationForTask(task)
+    annotation.init_from_db()
+    annotation.dump(FORMAT_XML, 'http', 'localhost:8080', {})

@@ -12,8 +12,8 @@ class Command(BaseCommand):
         parser.add_argument('--user', type=str, default="bot")
 
     def handle(self, *args, **options):
-        answer = input("All tasks for user " + options['user'] + " will be deleted. Continue? (y/n)    ")
-        if answer in ['y', 'Y', 'yes', 'Yes']:
+        answer = input("All tasks for user " + options['user'] + " will be deleted. Continue? (yes/no)    ")
+        if answer in ['yes', 'Yes']:
             self.delete_tasks(options['user'])
         else:
             print("\nAborting.")
