@@ -20,10 +20,10 @@ class Command(BaseCommand):
         parser.add_argument('--wait', type=bool, default=False)
 
     def handle(self, *args, **options):
-        tom = User.objects.get(id=2)
+        user = User.objects.get(username='bot')
         params = {'data': "/" + options['video_path'],
                   'labels': 'cart ~radio=type:empty,full,unclear ~checkbox=difficult:false person ~checkbox=difficult:false',
-                  'owner': tom,
+                  'owner': user,
                   'z_order': 'false',
                   'storage': 'share',
                   'task_name': options['task_name'],

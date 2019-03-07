@@ -19,12 +19,15 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not os.path.exists(options['dump_folder']):
             os.makedirs(options['dump_folder'])
-        for tid in options['tid']:
+        user = User.objects.get(username=options['user'])
 
+        for tid in options['tid']:
             db_task = Task.objects.get(id=tid)
-            db_task.owner = db_task.assignee
-            db_task.assignee = User.objects.get(username=options['user'])
-            db_task.save()
+
+            if db_task.assignee != user:
+                db_task.owner = db_task.assignee
+                db_task.assignee = user
+                db_task.save()
 
             dump_annotation_for_task(db_task, options['dump_folder'])
 
