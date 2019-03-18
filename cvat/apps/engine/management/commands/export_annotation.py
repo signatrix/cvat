@@ -6,9 +6,9 @@ from django.core.management.base import BaseCommand
 from cvat.apps.engine.models import Task
 from cvat.apps.engine.annotation import _AnnotationForTask, FORMAT_XML
 
-# python3 manage.py dump_xml --tid=1 --dump_folder=/home/django/share/annotation
+# python3 manage.py export_annotation --tid=1 --dump_folder=/home/django/share/annotation
 class Command(BaseCommand):
-    help = 'Dumps the XML File of a task id to the root of the share folder'
+    help = 'Exports the XML File of a task id to the root of the share folder'
 
     def add_arguments(self, parser):
         parser.add_argument('--tid', nargs='+', type=int)

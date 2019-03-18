@@ -15,23 +15,23 @@ class Command(BaseCommand):
         parser.add_argument('--xml_path', type=str)
 
     def handle(self, *args, **options):
+        print("DEPRECATED - please use import_annotation instead.\nexample usage: python3 manage.py import_annotation --xml_path='/home/django/share/annotation_update_test/annotation_test.xml' --task_name='annotation_update_test'")
+        # print(options['tid'])
 
-        print(options['tid'])
+        # # delete old annotations
+        # try:
+        #     slogger.task[options['tid']].info("delete annotation request")
+        #     clear_task(options['tid'])
+        # except Exception:
+        #     slogger.task[options['tid']].error("cannot delete annotation", exc_info=True)
 
-        # delete old annotations
-        try:
-            slogger.task[options['tid']].info("delete annotation request")
-            clear_task(options['tid'])
-        except Exception:
-            slogger.task[options['tid']].error("cannot delete annotation", exc_info=True)
+        # try:
+        #     slogger.task[options['tid']].info("save annotation request")
+        #     with open(options['xml_path'], 'r') as f:
+        #         xml_dict = xmltodict.parse(f.read())
+        #         print(xml_dict)
+        #         json_str = json.dumps(xml_dict, indent=4)
+        #         save_task(options['tid'], json_str)
 
-        try:
-            slogger.task[options['tid']].info("save annotation request")
-            with open(options['xml_path'], 'r') as f:
-                xml_dict = xmltodict.parse(f.read())
-                print(xml_dict)
-                json_str = json.dumps(xml_dict, indent=4)
-                save_task(options['tid'], json_str)
-
-        except Exception:
-            slogger.task[options['tid']].error("cannot save annotation", exc_info=True)
+        # except Exception:
+        #     slogger.task[options['tid']].error("cannot save annotation", exc_info=True)

@@ -8,7 +8,7 @@ from cvat.apps.engine.annotation import save_task
 from cvat.apps.engine.task import get
 
 
-# python3 manage.py update_task_data --xml_path="/home/django/share/annotation_update_test/annotation_test.xml" --task_name="annotation_update_test"
+# python3 manage.py import_annotation --xml_path="/home/django/share/annotation_update_test/annotation_test.xml" --task_name="annotation_update_test"
 class Command(BaseCommand):
     help = 'Updates a given tasks annotation data'
 
