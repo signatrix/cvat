@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
+from cvat.apps.engine.models import Task
 from cvat.apps.engine import task
 global_logger = logging.getLogger(__name__)
 
@@ -22,6 +23,8 @@ class Command(BaseCommand):
         parser.add_argument('--xml_path', type=str, required=False)   #requires the flag --wait, because the video import needs to be done
 
     def handle(self, *args, **options):
+        if Task.objects.filter(name=options['task_name']).first():
+            raise ValueError("A Task with the name " + options['task_name'] + " already exists.")
         user = User.objects.get(username='bot')
         
         params = {'data': "/" + options['video_path'],
@@ -52,7 +55,7 @@ class Command(BaseCommand):
         xml_path = options.get('xml_path')
         if xml_path:
             if not os.path.isfile(options['xml_path']):
-                raise ValueError("\nFile at " + options['xml_path'] + " does not exist.\n")
+                raise ValueError("File at " + options['xml_path'] + " does not exist.")
 
         params['SOURCE_PATHS'] = [abspath]
         params['TARGET_PATHS'] = [os.path.join(upload_dir, relpath)]

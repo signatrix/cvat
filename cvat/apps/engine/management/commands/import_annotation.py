@@ -19,7 +19,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not os.path.isfile(options['xml_path']):
-            raise ValueError("\nFile at " + options['xml_path'] + " does not exist.\n")
+            raise ValueError("File at " + options['xml_path'] + " does not exist.")
         task = Task.objects.filter(name=options.get('task_name')).first()
         if not task:
             raise ValueError('No task with name ' + options['task_name'])
@@ -353,10 +353,8 @@ class AnnotationParser:
             raise ValueError('An unknown attribute found in the annotation file: ' + name)
 
         attrInfo = self.labelsInfo.attrInfo(attrId)
-        # dump(attrTag)
-        # print(attrInfo['values'])
-        # print(self.labelsInfo.strToValues(attrInfo['type'], attrTag.getAttribute('innerHTML')))
-        value = self.labelsInfo.strToValues(attrInfo['type'], attrTag.getAttribute('innerHTML'))[0]
+
+        value = self.labelsInfo.strToValues(attrInfo['type'], attrTag.firstChild.nodeValue)[0]
 
         if attrInfo['type'] in ['select', 'radio'] and value not in attrInfo['values']:
             raise ValueError('Incorrect attribute value found for "' + name + '" attribute: ' + value)
@@ -481,11 +479,6 @@ class LabelsInfo:
                 return int(attrId)
 
     def strToValues(self, type_, string):
-        # this is stupid but is the result of long, annoying stupid fucking debugging
         switcher = {'checkbox': [string != '0' and string and string != 'false'],
                     'text': [string]}
-        if type_ not in ['checkbox', 'text']:
-            result = str(string).split(',')
-            while "" in result: result.remove("")
-            return result 
-        return switcher.get(type_, [])
+        return switcher.get(type_, str(string).split(','))
