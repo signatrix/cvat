@@ -1,5 +1,6 @@
 import functools
 import re
+import os.path
 from django.core.management.base import BaseCommand
 from xml.dom import minidom
 
@@ -17,7 +18,10 @@ class Command(BaseCommand):
         parser.add_argument('--task_name', type=str, required=True)
 
     def handle(self, *args, **options):
-        task = Task.objects.filter(name=options['task_name']).first()
+        if not os.path.isfile(options['xml_path']):
+            print("\nFile at " + options['xml_path'] + " does not exist. Exiting.\n")
+            return
+        task = Task.objects.filter(name=options.get('task_name')).first()
         if not task:
             raise ValueError('No task with name ' + options['task_name'])
         task_data = get(task.id)

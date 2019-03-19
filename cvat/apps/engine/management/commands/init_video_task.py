@@ -3,11 +3,12 @@ import os.path
 import time
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
 from cvat.apps.engine import task
-from .import_annotation import Command as ImportAnnotation
 global_logger = logging.getLogger(__name__)
+
 
 #./exec_manage init_video_task --video_path="/mnt/data/raw_video/tesco/tesco02/cam0/2019-01-28_11:44:05.mp4" --task_name="tesco/tesco02/cam0/2019-01-28_11:44:05" --xml_path="/mnt/data/raw_video/out_bak/tesco/tesco02_cam0_2019-01-28_11_44_05.xml"
 class Command(BaseCommand):
@@ -21,6 +22,9 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         user = User.objects.get(username='bot')
+        if not os.path.isfile(options['video_path']):
+            print("\nFile at " + options['video_path'] + " does not exist. Exiting.\n")
+            return
         params = {'data': "/" + options['video_path'],
                   'labels': 'cart ~radio=type:empty,full,unclear ~checkbox=difficult:false person ~checkbox=difficult:false',
                   'owner': user,
@@ -53,8 +57,7 @@ class Command(BaseCommand):
 
         xml_path = options.get('xml_path')
         if xml_path:
-            ImportAnnotation.handle(None, {'xml_path': xml_path,
-                                         'task_name': options['task_name']})
+            call_command('import_annotation', xml_path=xml_path, task_name=options['task_name'])
         log_path = db_task.get_log_path()
         status = task.check(db_task.id)
 
