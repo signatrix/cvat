@@ -1,5 +1,6 @@
 
 import os
+import shutil
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
@@ -33,7 +34,8 @@ class Command(BaseCommand):
 
 
 def dump_annotation_for_task(task, dump_folder):
-    task.path = dump_folder
     annotation = _AnnotationForTask(task)
     annotation.init_from_db()
     annotation.dump(FORMAT_XML, 'http', 'localhost:8080', {})
+
+    shutil.move(task.get_dump_path(), dump_folder)
