@@ -9,7 +9,7 @@ from cvat.apps.engine.annotation import save_task
 from cvat.apps.engine.task import get
 
 
-# python3 manage.py import_annotation --xml_path="/home/django/share/annotation_update_test/annotation_test.xml" --task_name="annotation_update_test"
+# ./exec_manage import_annotation --xml_path="/home/django/share/out_bak/tesco/tesco02_cam0_2019-01-28_11_44_05.xml" --task_name="tesco/tesco02/cam0/2019-01-28_11:44:05"
 class Command(BaseCommand):
     help = 'Updates a given tasks annotation data'
 
@@ -19,8 +19,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not os.path.isfile(options['xml_path']):
-            print("\nFile at " + options['xml_path'] + " does not exist. Exiting.\n")
-            return
+            raise ValueError("\nFile at " + options['xml_path'] + " does not exist.\n")
         task = Task.objects.filter(name=options.get('task_name')).first()
         if not task:
             raise ValueError('No task with name ' + options['task_name'])
@@ -354,7 +353,10 @@ class AnnotationParser:
             raise ValueError('An unknown attribute found in the annotation file: ' + name)
 
         attrInfo = self.labelsInfo.attrInfo(attrId)
-        value = self.labelsInfo.strToValues(attrInfo['type'], attrTag.innerHTML)[0]
+        # dump(attrTag)
+        # print(attrInfo['values'])
+        # print(self.labelsInfo.strToValues(attrInfo['type'], attrTag.getAttribute('innerHTML')))
+        value = self.labelsInfo.strToValues(attrInfo['type'], attrTag.getAttribute('innerHTML'))[0]
 
         if attrInfo['type'] in ['select', 'radio'] and value not in attrInfo['values']:
             raise ValueError('Incorrect attribute value found for "' + name + '" attribute: ' + value)
@@ -464,7 +466,7 @@ class LabelsInfo:
             info['name'] = obj['name']
             info['type'] = obj['type']
             info['mutable'] = obj['mutable']
-            info['values'] = obj['values'].slice()
+            info['values'] = obj['values']
         return info
 
     def labelIdOf(self, name):
@@ -479,6 +481,11 @@ class LabelsInfo:
                 return int(attrId)
 
     def strToValues(self, type_, string):
+        # this is stupid but is the result of long, annoying stupid fucking debugging
         switcher = {'checkbox': [string != '0' and string and string != 'false'],
                     'text': [string]}
-        return switcher.get(type_, str(string).split(','))
+        if type_ not in ['checkbox', 'text']:
+            result = str(string).split(',')
+            while "" in result: result.remove("")
+            return result 
+        return switcher.get(type_, [])
