@@ -6,10 +6,10 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
 from cvat.apps.engine import task
-from .update_task_data import Command as UpdateTaskData
+from .import_annotation import Command as ImportAnnotation
 global_logger = logging.getLogger(__name__)
 
-
+#./exec_manage init_video_task --video_path="/mnt/data/raw_video/tesco/tesco02/cam0/2019-01-28_11:44:05.mp4" --task_name="tesco/tesco02/cam0/2019-01-28_11:44:05" --xml_path="/mnt/data/raw_video/out_bak/tesco/tesco02_cam0_2019-01-28_11_44_05.xml"
 class Command(BaseCommand):
     help = 'Creates a task given a dataset'
 
@@ -53,7 +53,7 @@ class Command(BaseCommand):
 
         xml_path = options.get('xml_path')
         if xml_path:
-            UpdateTaskData.handle(None, {'xml_path': xml_path,
+            ImportAnnotation.handle(None, {'xml_path': xml_path,
                                          'task_name': options['task_name']})
         log_path = db_task.get_log_path()
         status = task.check(db_task.id)
