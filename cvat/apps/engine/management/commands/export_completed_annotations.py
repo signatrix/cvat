@@ -5,7 +5,8 @@ from django.core.management.base import BaseCommand
 
 from cvat.apps.engine.task import delete
 from cvat.apps.engine.models import Task
-from .dump_xml import dump_annotation_for_task
+from .export_annotation import dump_annotation_for_task
+
 
 # python3 manage.py export_completed_annotations --dump_folder=/home/django/share/exported_annotations/
 class Command(BaseCommand):
@@ -17,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not os.path.exists(options['dump_folder']):
             os.makedirs(options['dump_folder'])
-        
+
         exported_tasks = []
         for user in User.objects.all():
             tasks = Task.objects.filter(status='completed').filter(Q(assignee=user) | Q(owner=user))
@@ -41,8 +42,7 @@ class Command(BaseCommand):
 
 
 def dump_annotations(task, dump_folder):
-        task.owner = task.assignee
-        task.assignee = User.objects.get(username='bot')
-        task.save()
-        dump_annotation_for_task(task, dump_folder)
-    
+    task.owner = task.assignee
+    task.assignee = User.objects.get(username='bot')
+    task.save()
+    dump_annotation_for_task(task, dump_folder)
