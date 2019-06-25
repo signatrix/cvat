@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand
 from cvat.apps.engine.task import delete
 from cvat.apps.engine.models import Task
 
+
 # python3 manage.py cleanup_tasks --user=bot
 class Command(BaseCommand):
     help = 'Deletes completed tasks'

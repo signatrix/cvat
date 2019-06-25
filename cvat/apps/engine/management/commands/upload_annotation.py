@@ -6,9 +6,9 @@ from cvat.apps.engine.annotation import clear_task, save_task
 from ...log import slogger
 
 
-# DEPRECATED (?)
+# DEPRECATED
 class Command(BaseCommand):
-    help = 'Uploads an XML File for a specific task'
+    help = '"DEPRECATED - please use import_annotation instead.\nexample usage: python3 manage.py import_annotation --xml_path=' / home / django / share / annotation_update_test / annotation_test.xml' --task_name='annotation_update_test'"'
 
     def add_arguments(self, parser):
         parser.add_argument('--tid', type=int)

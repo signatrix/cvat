@@ -7,6 +7,7 @@ from django.core.management.base import BaseCommand
 from cvat.apps.engine.models import Task
 from cvat.apps.engine.annotation import _AnnotationForTask, FORMAT_XML
 
+
 # python3 manage.py export_annotation --tid=1 --dump_folder=/home/django/share/annotation
 class Command(BaseCommand):
     help = 'Exports the XML File of a task id to the root of the share folder'

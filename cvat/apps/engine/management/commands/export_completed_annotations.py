@@ -1,4 +1,5 @@
 import os
+from datetime import datetime
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
@@ -10,12 +11,15 @@ from .export_annotation import dump_annotation_for_task
 
 # python3 manage.py export_completed_annotations --dump_folder=/home/django/share/exported_annotations/
 class Command(BaseCommand):
-    help = 'Exports completed annotations and deletes the imported tasks if the user wants'
+    help = 'Exports completed annotations and deletes the imported tasks if the user wants\nUse:\n./exec_manage export_completed_annotations --dump_folder=/home/django/share/exported_annotations/'
 
     def add_arguments(self, parser):
-        parser.add_argument('--dump_folder', type=str, default='/home/django/share/exported_annotations')
+        parser.add_argument('--dump_folder', type=str, default='')
 
     def handle(self, *args, **options):
+        if not options['dump_folder']:
+            "/home/django/share/exported_annotations/"
+            options['dump_folder'] = os.path.join("/home/django/share/exported_annotations/", datetime.now().strftime("%Y_%m_%d"))
         if not os.path.exists(options['dump_folder']):
             os.makedirs(options['dump_folder'])
 

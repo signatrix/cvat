@@ -11,7 +11,7 @@ from cvat.apps.engine.task import get
 
 # ./exec_manage import_annotation --xml_path="/home/django/share/out_bak/tesco/tesco02_cam0_2019-01-28_11_44_05.xml" --task_name="tesco/tesco02/cam0/2019-01-28_11:44:05"
 class Command(BaseCommand):
-    help = 'Updates a given tasks annotation data'
+    help = 'Updates a given tasks annotation data\nUse:\n./exec_manage import_annotation --xml_path="/home/django/share/out_bak/tesco/tesco02_cam0_2019-01-28_11_44_05.xml" --task_name="tesco/tesco02/cam0/2019-01-28_11:44:05"'
 
     def add_arguments(self, parser):
         parser.add_argument('--xml_path', type=str, required=True)
