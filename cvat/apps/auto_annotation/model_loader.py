@@ -7,8 +7,9 @@ import json
 import cv2
 import os
 import subprocess
+import numpy as np
 
-from openvino.inference_engine import IENetwork, IEPlugin
+from cvat.apps.auto_annotation.inference_engine import make_plugin, make_network
 
 class ModelLoader():
     def __init__(self, model, weights):
@@ -19,23 +20,26 @@ class ModelLoader():
         if not IE_PLUGINS_PATH:
             raise OSError("Inference engine plugin path env not found in the system.")
 
-        plugin = IEPlugin(device="CPU", plugin_dirs=[IE_PLUGINS_PATH])
-        if (self._check_instruction("avx2")):
-            plugin.add_cpu_extension(os.path.join(IE_PLUGINS_PATH, "libcpu_extension_avx2.so"))
-        elif (self._check_instruction("sse4")):
-            plugin.add_cpu_extension(os.path.join(IE_PLUGINS_PATH, "libcpu_extension_sse4.so"))
-        else:
-            raise Exception("Inference engine requires a support of avx2 or sse4.")
+        plugin = make_plugin()
+        network = make_network(self._model, self._weights)
 
-        network = IENetwork.from_ir(model=self._model, weights=self._weights)
         supported_layers = plugin.get_supported_layers(network)
         not_supported_layers = [l for l in network.layers.keys() if l not in supported_layers]
         if len(not_supported_layers) != 0:
             raise Exception("Following layers are not supported by the plugin for specified device {}:\n {}".
                       format(plugin.device, ", ".join(not_supported_layers)))
 
-        self._input_blob_name = next(iter(network.inputs))
+        iter_inputs = iter(network.inputs)
+        self._input_blob_name = next(iter_inputs)
         self._output_blob_name = next(iter(network.outputs))
+
+        self._require_image_info = False
+
+        # NOTE: handeling for the inclusion of `image_info` in OpenVino2019
+        if 'image_info' in network.inputs:
+            self._require_image_info = True
+        if self._input_blob_name == 'image_info':
+            self._input_blob_name = next(iter_inputs)
 
         self._net = plugin.load(network=network, num_requests=2)
         input_type = network.inputs[self._input_blob_name]
@@ -45,15 +49,22 @@ class ModelLoader():
         _, _, h, w = self._input_layout
         in_frame = image if image.shape[:-1] == (h, w) else cv2.resize(image, (w, h))
         in_frame = in_frame.transpose((2, 0, 1))  # Change data layout from HWC to CHW
-        return self._net.infer(inputs={self._input_blob_name: in_frame})[self._output_blob_name].copy()
+        inputs = {self._input_blob_name: in_frame}
+        if self._require_image_info:
+            info = np.zeros([1, 3])
+            info[0, 0] = h
+            info[0, 1] = w
+            # frame number
+            info[0, 2] = 1
+            inputs['image_info'] = info
 
-    @staticmethod
-    def _check_instruction(instruction):
-        return instruction == str.strip(
-            subprocess.check_output(
-                "lscpu | grep -o \"{}\" | head -1".format(instruction), shell=True
-            ).decode("utf-8"))
+        results = self._net.infer(inputs)
+        if len(results) == 1:
+            return results[self._output_blob_name].copy()
+        else:
+            return results.copy()
 
-def load_label_map(labels_path):
-        with open(labels_path, "r") as f:
-            return json.load(f)["label_map"]
+
+def load_labelmap(labels_path):
+    with open(labels_path, "r") as f:
+        return json.load(f)["label_map"]

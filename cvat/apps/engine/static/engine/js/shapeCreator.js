@@ -38,7 +38,7 @@ class ShapeCreatorModel extends Listener {
         let frame = window.cvat.player.frames.current;
 
         data.label_id = this._defaultLabel;
-        data.group_id = 0;
+        data.group = 0;
         data.frame = frame;
         data.occluded = false;
         data.outside = false;
@@ -54,12 +54,12 @@ class ShapeCreatorModel extends Listener {
             });
         }
 
-        if (this._defaultMode === 'interpolation' && this._defaultType === 'box') {
+        // FIXME: In the future we have to make some generic solution
+        if (this._defaultMode === 'interpolation' && ['box', 'points'].includes(this._defaultType)) {
             data.shapes = [];
             data.shapes.push(Object.assign({}, result, data));
-            this._shapeCollection.add(data, `interpolation_box`);
-        }
-        else {
+            this._shapeCollection.add(data, `interpolation_${this._defaultType}`);
+        } else {
             Object.assign(data, result);
             this._shapeCollection.add(data, `annotation_${this._defaultType}`);
         }
@@ -184,6 +184,7 @@ class ShapeCreatorView {
         this._typeSelector = $('#shapeTypeSelector');
         this._polyShapeSizeInput = $('#polyShapeSize');
         this._frameContent = SVG.adopt($('#frameContent')[0]);
+        this._frameText = SVG.adopt($("#frameText")[0]);
         this._playerFrame = $('#playerFrame');
         this._createButton.on('click', () => this._controller.switchCreateMode(false));
         this._drawInstance = null;
@@ -212,11 +213,14 @@ class ShapeCreatorView {
         }
 
         this._typeSelector.on('change', (e) => {
-            let type = $(e.target).prop('value');
-            if (type != 'box' && this._modeSelector.prop('value') != 'annotation') {
+            // FIXME: In the future we have to make some generic solution
+            const mode = this._modeSelector.prop('value');
+            const type = $(e.target).prop('value');
+            if (type !== 'box' && !(type === 'points' && this._polyShapeSize === 1)
+                && mode !== 'annotation') {
                 this._modeSelector.prop('value', 'annotation');
                 this._controller.setDefaultShapeMode('annotation');
-                showMessage('Poly shapes available only like annotation shapes');
+                showMessage('Only the annotation mode allowed for the shape');
             }
             this._controller.setDefaultShapeType(type);
         }).trigger('change');
@@ -226,20 +230,30 @@ class ShapeCreatorView {
         }).trigger('change');
 
         this._modeSelector.on('change', (e) => {
-            let mode = $(e.target).prop('value');
-            if (mode != 'annotation' && this._typeSelector.prop('value') != 'box') {
+            // FIXME: In the future we have to make some generic solution
+            const mode = $(e.target).prop('value');
+            const type = this._typeSelector.prop('value');
+            if (mode !== 'annotation' && !(type === 'points' && this._polyShapeSize === 1)
+                && type !== 'box') {
                 this._typeSelector.prop('value', 'box');
                 this._controller.setDefaultShapeType('box');
-                showMessage('Only boxes available like interpolation shapes');
+                showMessage('Only boxes and single point allowed in the interpolation mode');
             }
             this._controller.setDefaultShapeMode(mode);
         }).trigger('change');
 
         this._polyShapeSizeInput.on('change', (e) => {
             e.stopPropagation();
-            let size = + e.target.value;
+            let size = +e.target.value;
             if (size < 0) size = 0;
             if (size > 100) size = 0;
+            const mode = this._modeSelector.prop('value');
+            const type = this._typeSelector.prop('value');
+            if (mode === 'interpolation' && type === 'points' && size !== 1) {
+                showMessage('Only single point allowed in the interpolation mode');
+                size = 1;
+            }
+
             e.target.value = size || '';
             this._polyShapeSize = size;
         }).trigger('change');
@@ -264,6 +278,7 @@ class ShapeCreatorView {
             let size = this._polyShapeSize;
             let sizeDecrement = function() {
                 if (!--size) {
+                    numberOfPoints = this._polyShapeSize;
                     this._drawInstance.draw('done');
                 }
             }.bind(this);
@@ -322,7 +337,7 @@ class ShapeCreatorView {
                         this._drawInstance.draw('point', e);
                         lastPoint = {
                             x: e.clientX,
-                            y: e.clientY
+                            y: e.clientY,
                         };
                     }
                 }
@@ -387,26 +402,32 @@ class ShapeCreatorView {
                     sizeUI = null;
                 }
 
-                let frameWidth = window.cvat.player.geometry.frameWidth;
-                let frameHeight = window.cvat.player.geometry.frameHeight;
-                let rect = window.cvat.translate.box.canvasToActual(e.target.getBBox());
-                let box = {};
-                box.xtl = Math.clamp(rect.x, 0, frameWidth);
-                box.ytl = Math.clamp(rect.y, 0, frameHeight);
-                box.xbr = Math.clamp(rect.x + rect.width, 0, frameWidth);
-                box.ybr = Math.clamp(rect.y + rect.height, 0, frameHeight);
+                const frameWidth = window.cvat.player.geometry.frameWidth;
+                const frameHeight = window.cvat.player.geometry.frameHeight;
+                const rect = window.cvat.translate.box.canvasToActual(e.target.getBBox());
 
-                if (this._mode === 'interpolation') {
-                    box.outside = false;
-                }
+                const xtl = Math.clamp(rect.x, 0, frameWidth);
+                const ytl = Math.clamp(rect.y, 0, frameHeight);
+                const xbr = Math.clamp(rect.x + rect.width, 0, frameWidth);
+                const ybr = Math.clamp(rect.y + rect.height, 0, frameHeight);
+                if ((ybr - ytl) * (xbr - xtl) >= AREA_TRESHOLD) {
+                    const box = {
+                        xtl,
+                        ytl,
+                        xbr,
+                        ybr,
+                    }
 
-                if ((box.ybr - box.ytl) * (box.xbr - box.xtl) >= AREA_TRESHOLD) {
+                    if (this._mode === 'interpolation') {
+                        box.outside = false;
+                    }
+
                     this._controller.finish(box, this._type);
                 }
 
                 this._controller.switchCreateMode(true);
             }.bind(this)).on('drawupdate', (e) => {
-                sizeUI = drawBoxSize.call(sizeUI, this._frameContent, e.target);
+                sizeUI = drawBoxSize.call(sizeUI, this._frameContent, this._frameText, e.target.getBBox());
             }).on('drawcancel', () => {
                 if (sizeUI) {
                     sizeUI.rm();

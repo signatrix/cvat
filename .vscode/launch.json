@@ -5,29 +5,24 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "CVAT Server",
+            "name": "server",
             "type": "python",
             "request": "launch",
             "stopOnEntry": false,
-            "debugStdLib": true,
+            "justMyCode": false,
             "pythonPath": "${config:python.pythonPath}",
             "program": "${workspaceRoot}/manage.py",
             "args": [
                 "runserver",
                 "--noreload",
-                "--nothreading",
                 "--insecure",
                 "127.0.0.1:7000"
             ],
-            "debugOptions": [
-                "RedirectOutput",
-                "DjangoDebugging"
-            ],
-            "cwd": "${workspaceFolder}",
-            "envFile": "${workspaceFolder}/.env",
+            "django": true,
+            "cwd": "${workspaceFolder}"
         },
         {
-            "name": "CVAT Client",
+            "name": "client",
             "type": "chrome",
             "request": "launch",
             "url": "http://localhost:7000/",
@@ -40,11 +35,11 @@
             }
         },
         {
-            "name": "CVAT RQ - default",
+            "name": "RQ - default",
             "type": "python",
             "request": "launch",
             "stopOnEntry": false,
-            "debugStdLib": true,
+            "justMyCode": false,
             "pythonPath": "${config:python.pythonPath}",
             "program": "${workspaceRoot}/manage.py",
             "args": [
@@ -53,20 +48,15 @@
                 "--worker-class",
                 "cvat.simpleworker.SimpleWorker",
             ],
-            "debugOptions": [
-                "RedirectOutput",
-                "DjangoDebugging"
-            ],
+            "django": true,
             "cwd": "${workspaceFolder}",
-            "env": {},
-            "envFile": "${workspaceFolder}/.env",
-
+            "env": {}
         },
         {
-            "name": "CVAT RQ - low",
+            "name": "RQ - low",
             "type": "python",
             "request": "launch",
-            "debugStdLib": true,
+            "justMyCode": false,
             "stopOnEntry": false,
             "pythonPath": "${config:python.pythonPath}",
             "program": "${workspaceRoot}/manage.py",
@@ -76,44 +66,95 @@
                 "--worker-class",
                 "cvat.simpleworker.SimpleWorker",
             ],
-            "debugOptions": [
-                "RedirectOutput",
-                "DjangoDebugging"
-            ],
+            "django": true,
             "cwd": "${workspaceFolder}",
-            "env": {},
-            "envFile": "${workspaceFolder}/.env",
+            "env": {}
         },
         {
-            "name": "CVAT git",
+            "name": "git",
             "type": "python",
             "request": "launch",
-            "debugStdLib": true,
+            "justMyCode": false,
             "stopOnEntry": false,
             "pythonPath": "${config:python.pythonPath}",
             "program": "${workspaceRoot}/manage.py",
             "args": [
                 "update_git_states"
             ],
-            "debugOptions": [
-                "RedirectOutput",
-                "DjangoDebugging"
-            ],
+            "django": true,
             "cwd": "${workspaceFolder}",
-            "env": {},
-            "envFile": "${workspaceFolder}/.env",
+            "env": {}
         },
+        {
+            "name": "migrate",
+            "type": "python",
+            "request": "launch",
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${workspaceRoot}/manage.py",
+            "args": [
+                "migrate"
+            ],
+            "django": true,
+            "cwd": "${workspaceFolder}",
+            "env": {}
+        },
+        {
+            "name": "tests",
+            "type": "python",
+            "request": "launch",
+            "justMyCode": false,
+            "stopOnEntry": false,
+            "pythonPath": "${config:python.pythonPath}",
+            "program": "${workspaceRoot}/manage.py",
+            "args": [
+                "test",
+                "--settings",
+                "cvat.settings.testing",
+                "cvat/apps/engine",
+            ],
+            "django": true,
+            "cwd": "${workspaceFolder}",
+            "env": {}
+        },
+        {
+            "name": "cvat.js debug",
+            "type": "node",
+            "request": "launch",
+            "cwd": "${workspaceFolder}/cvatjs",
+            "runtimeExecutable": "node",
+            "runtimeArgs": [
+                "--nolazy",
+                "--inspect-brk=9230",
+                "src/api.js"
+            ],
+            "port": 9230
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "jest debug",
+            "program": "${workspaceFolder}/cvatjs/node_modules/.bin/jest",
+            "args": [
+              "--config",
+              "${workspaceFolder}/cvatjs/jest.config.js"
+            ],
+            "console": "integratedTerminal",
+            "internalConsoleOptions": "neverOpen",
+            "disableOptimisticBPs": true,
+          }
     ],
     "compounds": [
         {
-            "name": "CVAT Debugging",
+            "name": "debugging",
             "configurations": [
-                "CVAT Client",
-                "CVAT Server",
-                "CVAT RQ - default",
-                "CVAT RQ - low",
-                "CVAT git",
+                "client",
+                "server",
+                "RQ - default",
+                "RQ - low",
+                "git",
             ]
-        }
+        },
     ]
 }

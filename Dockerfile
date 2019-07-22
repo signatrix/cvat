@@ -102,15 +102,12 @@ RUN if [ "$WITH_TESTS" = "yes" ]; then \
 # Install and initialize CVAT, copy all necessary files
 COPY cvat/requirements/ /tmp/requirements/
 COPY supervisord.conf mod_wsgi.conf wait-for-it.sh manage.py ${HOME}/
-RUN  pip3 install --no-cache-dir -r /tmp/requirements/${DJANGO_CONFIGURATION}.txt
-COPY cvat/ ${HOME}/cvat
-
-COPY ssh ${HOME}/.ssh
+RUN pip3 install --no-cache-dir -r /tmp/requirements/${DJANGO_CONFIGURATION}.txt
 
 # Install git application dependencies
 RUN apt-get update && \
     apt-get install -y ssh netcat-openbsd git curl zip  && \
-    curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
+    wget -qO /dev/stdout https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash && \
     apt-get install -y git-lfs && \
     git lfs install && \
     rm -rf /var/lib/apt/lists/* && \
@@ -120,8 +117,30 @@ RUN apt-get update && \
         echo export "GIT_SSH_COMMAND=\"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=30 -o ProxyCommand='nc -X 5 -x ${socks_proxy} %h %p'\"" >> ${HOME}/.bashrc; \
     fi
 
+# Download model for re-identification app
+ENV REID_MODEL_DIR=${HOME}/reid
+RUN if [ "$OPENVINO_TOOLKIT" = "yes" ]; then \
+        mkdir ${HOME}/reid && \
+        wget https://download.01.org/openvinotoolkit/2018_R5/open_model_zoo/person-reidentification-retail-0079/FP32/person-reidentification-retail-0079.xml -O reid/reid.xml && \
+        wget https://download.01.org/openvinotoolkit/2018_R5/open_model_zoo/person-reidentification-retail-0079/FP32/person-reidentification-retail-0079.bin -O reid/reid.bin; \
+    fi
+
+# TODO: CHANGE URL
+ARG WITH_DEXTR
+ENV WITH_DEXTR=${WITH_DEXTR}
+ENV DEXTR_MODEL_DIR=${HOME}/dextr
+RUN if [ "$WITH_DEXTR" = "yes" ]; then \
+        mkdir ${DEXTR_MODEL_DIR} -p && \
+        wget https://download.01.org/openvinotoolkit/models_contrib/cvat/dextr_model_v1.zip -O ${DEXTR_MODEL_DIR}/dextr.zip && \
+        unzip ${DEXTR_MODEL_DIR}/dextr.zip -d ${DEXTR_MODEL_DIR} && rm ${DEXTR_MODEL_DIR}/dextr.zip; \
+    fi
+
+COPY ssh ${HOME}/.ssh
+COPY cvat/ ${HOME}/cvat
 COPY tests ${HOME}/tests
-RUN patch -p1 < ${HOME}/cvat/apps/engine/static/engine/js/3rdparty.patch
+# Binary option is necessary to correctly apply the patch on Windows platform.
+# https://unix.stackexchange.com/questions/239364/how-to-fix-hunk-1-failed-at-1-different-line-endings-message
+RUN patch --binary -p1 < ${HOME}/cvat/apps/engine/static/engine/js/3rdparty.patch
 RUN chown -R ${USER}:${USER} .
 
 # RUN all commands below as 'django' user

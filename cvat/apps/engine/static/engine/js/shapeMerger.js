@@ -93,7 +93,7 @@ class ShapeMergerModel extends Listener {
 
             let object = {
                 label_id: label,
-                group_id: 0,
+                group: 0,
                 frame: sortedFrames[0],
                 attributes: [],
                 shapes: [],
@@ -212,7 +212,10 @@ class ShapeMergerModel extends Listener {
 
     click() {
         if (this._mergeMode) {
-            let active = this._collectionModel.selectShape(this._collectionModel.lastPosition, true);
+            const active = this._collectionModel.selectShape(
+                this._collectionModel.lastPosition,
+                true,
+            );
             if (active) {
                 this._pushForMerge(active);
             }

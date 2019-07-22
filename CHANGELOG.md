@@ -6,11 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
-- OpenVINO auto annotation: it is possible to upload a custom model and annotate images automatically.
+- A converter to YOLO format
+- Installation guide
+- Linear interpolation for a single point
+- Video frame filter
+- Running functional tests for REST API during a build
+- Admins are no longer limited to a subset of python commands in the auto annotation application
+- Remote data source (list of URLs to create an annotation task)
+- Auto annotation using Faster R-CNN with Inception v2 (utils/open_model_zoo)
+- Auto annotation using Pixel Link mobilenet v2 - text detection (utils/open_model_zoo)
+- Ability to create a custom extractors for unsupported media types
+- Added in PDF extractor
+- Added in a command line model manager tester
 
 ### Changed
-- Propagation setup has been moved from settings to bottom player panel
-- Additional events like "Debug Info" or "Fit Image" have been added for analitics
+- Outside and keyframe buttons in the side panel for all interpolation shapes (they were only for boxes before)
 
 ### Deprecated
 -
@@ -19,10 +29,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -
 
 ### Fixed
-- Django 2.1.5 (security fix, https://nvd.nist.gov/vuln/detail/CVE-2019-3498)
+- Incorrect width of shapes borders in some cases
+- Annotation parser for tracks with a start frame less than the first segment frame
+- Interpolation on the server near outside frames
+- Dump for case when task name has a slash
+- Auto annotation fail for multijob tasks
+- Installation of CVAT with OpenVINO on the Windows platform
+- Background color was always black in utils/mask/converter.py
+- Exception in attribute annotation mode when a label are switched to a value without any attributes
+- Handling of wrong labelamp json file in auto annotation (https://github.com/opencv/cvat/issues/554)
 
 ### Security
 -
+
+## [0.4.2] - 2019-06-03
+### Fixed
+- Fixed interaction with the server share in the auto annotation plugin
+
+## [0.4.1] - 2019-05-14
+### Fixed
+- JavaScript syntax incompatibility with Google Chrome versions less than 72
+
+## [0.4.0] - 2019-05-04
+### Added
+- OpenVINO auto annotation: it is possible to upload a custom model and annotate images automatically.
+- Ability to rotate images/video in the client part (Ctrl+R, Shift+Ctrl+R shortcuts) (#305)
+- The ReID application for automatic bounding box merging has been added (#299)
+- Keyboard shortcuts to switch next/previous default shape type (box, polygon etc) [Alt + <, Alt + >] (#316)
+- Converter for VOC now supports interpolation tracks
+- REST API (/api/v1/*, /api/docs)
+- Semi-automatic semantic segmentation with the [Deep Extreme Cut](http://www.vision.ee.ethz.ch/~cvlsegmentation/dextr/) work
+
+### Changed
+- Propagation setup has been moved from settings to bottom player panel
+- Additional events like "Debug Info" or "Fit Image" have been added for analitics
+- Optional using LFS for git annotation storages (#314)
+
+### Deprecated
+- "Flip images" flag in the create task dialog will be removed. Rotation functionality in client part have been added instead.
+
+### Removed
+-
+
+### Fixed
+- Django 2.1.5 (security fix, https://nvd.nist.gov/vuln/detail/CVE-2019-3498)
+- Several scenarious which cause code 400 after undo/redo/save have been fixed (#315)
 
 ## [0.3.0] - 2018-12-29
 ### Added
