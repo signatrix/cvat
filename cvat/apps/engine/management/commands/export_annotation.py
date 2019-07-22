@@ -34,9 +34,14 @@ class Command(BaseCommand):
             dump_annotation_for_task(db_task, options['dump_folder'])
 
 
-def dump_annotation_for_task(task, dump_folder):
+def dump_annotation_for_task(task, dump_folder, overwrite=False):
     annotation = _AnnotationForTask(task)
     annotation.init_from_db()
     annotation.dump(FORMAT_XML, 'http', 'localhost:8080', {})
-
-    shutil.move(task.get_dump_path(), dump_folder)
+    path_to_dump = task.get_dump_path()
+    output_path = os.path.join(dump_folder, os.path.basename(path_to_dump))
+    if overwrite and os.path.exists(output_path):
+        os.remove(output_path)
+    shutil.move(path_to_dump, dump_folder)
+    permissions = 0o760  # owner all, group read and write, executable
+    os.chmod(dump_folder, permissions)

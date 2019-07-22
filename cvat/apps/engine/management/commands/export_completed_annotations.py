@@ -15,6 +15,8 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--dump_folder', type=str, default='')
+        parser.add_argument('--overwrite', '-o', action='store_true',
+                            help='Overwrite annotation if already present')
 
     def handle(self, *args, **options):
         if not options['dump_folder']:
@@ -29,8 +31,13 @@ class Command(BaseCommand):
             if tasks:
                 for task in tasks:
                     if task not in exported_tasks:
-                        dump_annotations(task, options['dump_folder'])
-                        exported_tasks.append(task)
+                        try:
+                            dump_annotations(task, options['dump_folder'], overwrite=options['overwrite'])
+                            exported_tasks.append(task)
+                        except Exception as e:
+                            print(e)
+                            print("Could not export annotation for " + task.name + "\nContinuing...")
+                            continue
         if exported_tasks:
             print('\nThe following tasks have been exported to ' + options['dump_folder'] + ':')
             for task in exported_tasks:
@@ -45,8 +52,8 @@ class Command(BaseCommand):
             print('No completed tasks were exported.')
 
 
-def dump_annotations(task, dump_folder):
+def dump_annotations(task, dump_folder, overwrite=False):
     task.owner = task.assignee
     task.assignee = User.objects.get(username='bot')
     task.save()
-    dump_annotation_for_task(task, dump_folder)
+    dump_annotation_for_task(task, dump_folder, overwrite=overwrite)
