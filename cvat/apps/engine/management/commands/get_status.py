@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from cvat.apps.engine.models import Job, Label, Segment, Task
+from cvat.apps.engine.models import Label, Task
 
 
 class Command(BaseCommand):

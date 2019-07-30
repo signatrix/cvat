@@ -55,4 +55,12 @@ def dump_annotations(task, dump_folder, overwrite=False):
         task.owner = task.assignee
         task.assignee = User.objects.get(username='bot')
         task.save()
-    dump_annotation_for_task(task, dump_folder, overwrite=overwrite)
+    if any(i in task.name for i in ('/', '-', '.')):
+        # case that the tasks name does not adhere to the database_datasetid[_labelsetid] format
+        output_folder = dump_folder
+    else:
+        database = "_".join([s for s in task.name.split("_") if "0" not in s])
+        output_folder = os.path.join(dump_folder, database)
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+    dump_annotation_for_task(task, output_folder, overwrite=overwrite)

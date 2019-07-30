@@ -41,9 +41,9 @@ class Command(BaseCommand):
 
 
 def dump_annotation_for_task(task, dump_folder, overwrite=False):
-    output_path = os.path.join(dump_folder, task.name + ".xml")
+    output_path = os.path.join(dump_folder, task.name.replace('/', '_') + ".xml")
     print("\nExporting annotations for " + task.name + " to " + output_path.replace("/home/django/share/", "/mnt/data/raw_video/"))
     annotation.dump_task_data(task.id, user, output_path, 'http', 'localhost:8080', {})
-    permissions = 0o760  # owner all, group read and write, executable
+    permissions = 0o770  # owner all, group read and write, executable
     os.chmod(output_path, permissions)
     os.chmod(dump_folder, permissions)
