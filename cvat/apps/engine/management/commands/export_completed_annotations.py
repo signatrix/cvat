@@ -4,7 +4,6 @@ from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
-from cvat.apps.engine.task import delete
 from cvat.apps.engine.models import Task
 from .export_annotation import dump_annotation_for_task
 
@@ -20,7 +19,6 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not options['dump_folder']:
-            "/home/django/share/exported_annotations/"
             options['dump_folder'] = os.path.join("/home/django/share/exported_annotations/", datetime.now().strftime("%Y_%m_%d"))
         if not os.path.exists(options['dump_folder']):
             os.makedirs(options['dump_folder'])
@@ -45,7 +43,7 @@ class Command(BaseCommand):
             answer = input('\nShould these tasks be deleted now? (yes/no): ')
             if answer in ['yes', 'Yes']:
                 for task in exported_tasks:
-                    delete(task.id)
+                    task.delete()
             else:
                 print('\nNo tasks were deleted. Make sure you will not export them multiple times to red in the future.')
         else:
@@ -53,7 +51,8 @@ class Command(BaseCommand):
 
 
 def dump_annotations(task, dump_folder, overwrite=False):
-    task.owner = task.assignee
-    task.assignee = User.objects.get(username='bot')
-    task.save()
+    if task.assignee.username != 'bot':
+        task.owner = task.assignee
+        task.assignee = User.objects.get(username='bot')
+        task.save()
     dump_annotation_for_task(task, dump_folder, overwrite=overwrite)

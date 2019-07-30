@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from cvat.apps.engine.models import Job, Label, ObjectPath, Segment, Task, TrackedBox
+from cvat.apps.engine.models import Job, Label, Segment, Task
 
 
 class Command(BaseCommand):
@@ -34,8 +34,7 @@ class Command(BaseCommand):
         # maybe this? name_width = min(max(map(lambda task: len(task.name), task_query_set), 80) + tab
         name_width = min(max(map(lambda x: len(x.name), Task.objects.all())), 80) + tab
 
-        print("{:<10} {:<{}} {:<12} {:<9} {:<11} {:<10} {:<23} {:<23} {:<10}".format('TASK ID', 'TASK NAME', name_width, 'ANNOTATOR', 'CARTS', 'PERSONS',
-                                                                                     'BBOXES', 'CREATED AT', 'SAVED/UPDATED AT', 'STATUS'))
+        print("{:<7} {:<{}} {:<12} {:<9} {:<11} {:<23} {:<23} {:<10}".format('TID', 'TASK NAME', name_width, 'ANNOTATOR', 'CARTS', 'PERSONS', 'CREATED AT', 'SAVED/UPDATED AT', 'STATUS'))
 
         table_content = []
 
@@ -48,29 +47,28 @@ class Command(BaseCommand):
             cart_label_obj = Label.objects.filter(name='cart', task=task).first()
             person_label_obj = Label.objects.filter(name='person', task=task).first()
 
-            job = Job.objects.filter(segment=Segment.objects.filter(task=task).first()).first()
+            # job = Job.objects.filter(segment=Segment.objects.filter(task=task).first()).first()
 
             if cart_label_obj:
-                cart_objects = list(ObjectPath.objects.filter(job=job, label=cart_label_obj))
-                carts_count = len(cart_objects)
+                # cart_objects = list(AnnotationModel.objects.filter(job=job, label=cart_label_obj))
+                carts_count = "?"  # len(cart_objects   )
             else:
-                cart_objects = []
+                # cart_objects = []
                 carts_count = 'None'
 
             if person_label_obj:
-                person_objects = list(ObjectPath.objects.filter(job=job, label=person_label_obj))
-                persons_count = len(person_objects)
+                # person_objects = list(AnnotationModel.objects.filter(job=job, label=person_label_obj))
+                persons_count = "?"  # len(person_objects)
             else:
-                person_objects = []
+                # person_objects = []
                 persons_count = 'None'
 
-            track_ids = list(map(lambda x: x.id, cart_objects + person_objects))
-            bboxes = TrackedBox.objects.filter(track_id__in=track_ids).count()
-
-            table_content.append((task.id, task.name, name_width, annotator_name, carts_count, persons_count, bboxes,
+            # track_ids = list(map(lambda x: x.id, cart_objects + person_objects))
+            # bboxes = TrackedBox.objects.filter(track_id__in=track_ids).count()
+            table_content.append((task.id, task.name, name_width, annotator_name, carts_count, persons_count,
                                   task.created_date.strftime('%Y-%m-%d %H:%M:%S'), task.updated_date.strftime('%Y-%m-%d %H:%M:%S'), task.status))
 
         table_content = sorted(table_content, key=lambda x: x[options['sort_by']], reverse=options['desc'])
 
-        for row in table_content:
-            print("{:<10} {:<{}} {:<12} {:<9} {:<11} {:<10} {:<23} {:<23} {:<10}".format(*row))
+        for row in reversed(table_content):
+            print("{:<7} {:<{}} {:<12} {:<9} {:<11} {:<23} {:<23} {:<10}".format(*row))

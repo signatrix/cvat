@@ -1,7 +1,6 @@
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
-from cvat.apps.engine.task import delete
 from cvat.apps.engine.models import Task
 
 
@@ -17,6 +16,6 @@ class Command(BaseCommand):
         answer = input(str(len(tasks)) + ' task(s) assigned to ' + options['user'] + ' will be deleted. Continue? (yes/no): ')
         if answer in ['yes', 'Yes']:
             for task in tasks:
-                delete(task.id)
+                task.delete()
         else:
             print('\nAborting.')

@@ -1,12 +1,14 @@
 import functools
 import re
 import os.path
+from django.conf import settings
 from django.core.management.base import BaseCommand
+from django.contrib.auth.models import User
 from xml.dom import minidom
 
 from cvat.apps.engine.models import Task
-from cvat.apps.engine.annotation import save_task
-from cvat.apps.engine.task import get
+from cvat.apps.engine.annotation import TaskAnnotation
+from cvat.apps.engine.task import get_image_meta_cache
 
 
 # ./exec_manage import_annotation --xml_path="/home/django/share/out_bak/tesco/tesco02_cam0_2019-01-28_11_44_05.xml" --task_name="tesco/tesco02/cam0/2019-01-28_11:44:05"
@@ -18,21 +20,31 @@ class Command(BaseCommand):
         parser.add_argument('--task_name', type=str, required=True)
 
     def handle(self, *args, **options):
-        if not os.path.isfile(options['xml_path']):
-            raise ValueError("File at " + options['xml_path'] + " does not exist.")
-        task = Task.objects.filter(name=options.get('task_name')).first()
-        if not task:
-            raise ValueError('No task with name ' + options['task_name'])
-        task_data = get(task.id)
-        output = self.parseFile(options['xml_path'], task_data)
-        save_task(task.id, output)
+        print("deprecated")
+        # share_root = settings.SHARE_ROOT
+        # xml_path = options['xml_path']
+        # if not os.path.isfile(xml_path):
+        #     xml_path = os.path.abspath(os.path.join(share_root, xml_path))
+        # if not os.path.isfile(xml_path):
+        #     raise ValueError("File at " + xml_path + " does not exist.")
+        # task = Task.objects.filter(name=options.get('task_name')).first()
+        # if not task:
+        #     raise ValueError('No task with name ' + options['task_name'])
+
+        # task_data = get(task)
+        # user = User.objects.get(username='cvat')
+
+        # output = self.parseFile(xml_path, task_data)
+
+        # annotation = TaskAnnotation(task.id, user)
+        # annotation.create(output)
 
     def parseFile(self, xml_path, task_data):
 
         annotationParser = AnnotationParser({'start': 0,
                                              'stop': task_data['size'],
                                              'image_meta_data': task_data['image_meta_data'],
-                                             'flipped': task_data['flipped']},
+                                             'flipped': task_data.get('flipped', None)},
                                             LabelsInfo(task_data['spec']),
                                             ConstIdGenerator(-1))
 
@@ -40,6 +52,44 @@ class Command(BaseCommand):
         exportData = createExportContainer()
         exportData['create'] = parsed['interpolationData']
         return exportData
+
+
+def get(db_task):
+    """Get the task as dictionary of attributes"""
+    db_labels = db_task.label_set.prefetch_related('attributespec_set').order_by('-pk').all()
+    im_meta_data = get_image_meta_cache(db_task)
+    attributes = {}
+    for db_label in db_labels:
+        attributes[db_label.id] = {}
+        for db_attrspec in db_label.attributespec_set.all():
+            attributes[db_label.id][db_attrspec.id] = db_attrspec.name
+    db_segments = list(db_task.segment_set.prefetch_related('job_set').all())
+    segment_length = max(db_segments[0].stop_frame - db_segments[0].start_frame + 1, 1)
+    job_indexes = []
+    for segment in db_segments:
+        db_job = segment.job_set.first()
+        job_indexes.append({
+            "job_id": db_job.id,
+            # "max_shape_id": db_job.max_shape_id,
+        })
+
+    return {
+        "status": db_task.status,
+        "spec": {
+            "labels": {db_label.id: db_label.name for db_label in db_labels},
+            "attributes": attributes
+        },
+        "size": db_task.size,
+        "taskid": db_task.id,
+        "name": db_task.name,
+        "mode": db_task.mode,
+        "segment_length": segment_length,
+        "jobs": job_indexes,
+        "overlap": db_task.overlap,
+        "z_orded": db_task.z_order,
+        # "flipped": db_task.flipped,
+        "image_meta_data": im_meta_data
+    }
 
 
 def createExportContainer():
@@ -83,7 +133,7 @@ class AnnotationParser:
     def __init__(self, job, labelsInfo, idGenerator):
         self.startFrame = job['start']
         self.stopFrame = job['stop']
-        self.flipped = job['flipped']
+        # self.flipped = job['flipped']
         self.im_meta = job['image_meta_data']
         self.labelsInfo = labelsInfo
         self.idGen = idGenerator
@@ -309,7 +359,8 @@ class AnnotationParser:
         ybr = float(box.getAttribute('ybr'))
 
         if xtl < 0 or ytl < 0 or xbr < 0 or ybr < 0 or xtl > im_w or ytl > im_h or xbr > im_w or ybr > im_h:
-            raise ValueError('Incorrect bb found in annotation file: xtl=' + str(xtl) + ' ytl=' + str(ytl) + ' xbr=' + str(xbr) + ' ybr=' + str(ybr) + '.\n Box out of range: ' + str(im_w) + 'x' + str(im_h))
+            raise ValueError('Incorrect bb found in annotation file: xtl=' + str(xtl) + ' ytl=' + str(ytl) + ' xbr=' +
+                             str(xbr) + ' ybr=' + str(ybr) + '.\n Box out of range: ' + str(im_w) + 'x' + str(im_h))
 
         if self.flipped:
             _xtl = im_w - xbr
