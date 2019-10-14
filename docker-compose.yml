@@ -13,7 +13,7 @@ services:
       default:
         aliases:
           - db
-    restart: always
+    restart: on-failure
     environment:
       POSTGRES_USER: root
       POSTGRES_DB: cvat

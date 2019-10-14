@@ -41,9 +41,9 @@ class Command(BaseCommand):
                                "attributes": [
                                    {
                                        "name": "type",
-                                       "mutable": False,
+                                       "mutable": True,
                                        "input_type": "radio",
-                                       "default_value": "",
+                                       "default_value": "empty",
                                        "values": ["empty", "full", "unclear"],
                                    },
                                    {
