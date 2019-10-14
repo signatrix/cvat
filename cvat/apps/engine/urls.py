@@ -24,6 +24,7 @@ schema_view = get_schema_view(
 )
 
 router = routers.DefaultRouter(trailing_slash=False)
+router.register('projects', views.ProjectViewSet)
 router.register('tasks', views.TaskViewSet)
 router.register('jobs', views.JobViewSet)
 router.register('users', views.UserViewSet)
@@ -40,5 +41,6 @@ urlpatterns = [
     path('api/docs/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 
     # entry point for API
+    path('api/v1/auth/', include('cvat.apps.authentication.api_urls')),
     path('api/v1/', include((router.urls, 'cvat'), namespace='v1'))
 ]

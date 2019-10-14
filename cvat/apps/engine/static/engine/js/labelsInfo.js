@@ -156,7 +156,7 @@ class LabelsInfo {
 
 
     static deserialize(serialized) {
-        const normalized = serialized.replace(/'+/g, '\'').replace(/"+/g, '"').replace(/\s+/g, ' ').trim();
+        const normalized = serialized.replace(/'+/g, '\'').replace(/\s+/g, ' ').trim();
         const fragments = String.customSplit(normalized, ' ');
 
         const deserialized = [];
@@ -164,7 +164,7 @@ class LabelsInfo {
         for (let fragment of fragments) {
             fragment = fragment.trim();
             if ((fragment.startsWith('~')) || (fragment.startsWith('@'))) {
-                const regex = /(@|~)(checkbox|select|number|text|radio)=([-,?!_0-9a-zA-Z()\s"]+):([-,?!_0-9a-zA-Z()"\s]+)/g;
+                const regex = /(@|~)(checkbox|select|number|text|radio)=(.+):(.+)/g;
                 const result = regex.exec(fragment);
                 if (result === null || latest === null) {
                     throw Error('Bad labels format');

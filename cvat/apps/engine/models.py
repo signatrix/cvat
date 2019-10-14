@@ -33,7 +33,26 @@ class StatusChoice(str, Enum):
     def __str__(self):
         return self.value
 
+class Project(models.Model):
+    name = SafeCharField(max_length=256)
+    owner = models.ForeignKey(User, null=True, blank=True,
+        on_delete=models.SET_NULL, related_name="+")
+    assignee = models.ForeignKey(User, null=True,  blank=True,
+        on_delete=models.SET_NULL, related_name="+")
+    bug_tracker = models.CharField(max_length=2000, blank=True, default="")
+    created_date = models.DateTimeField(auto_now_add=True)
+    updated_date = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=32, choices=StatusChoice.choices(),
+        default=StatusChoice.ANNOTATION)
+
+    # Extend default permission model
+    class Meta:
+        default_permissions = ()
+
 class Task(models.Model):
+    project = models.ForeignKey(Project, on_delete=models.CASCADE,
+        null=True, blank=True, related_name="tasks",
+        related_query_name="task")
     name = SafeCharField(max_length=256)
     size = models.PositiveIntegerField()
     mode = models.CharField(max_length=32)
@@ -51,7 +70,7 @@ class Task(models.Model):
     image_quality = models.PositiveSmallIntegerField(default=50)
     start_frame = models.PositiveIntegerField(default=0)
     stop_frame = models.PositiveIntegerField(default=0)
-    frame_filter = models.CharField(max_length=256, default="")
+    frame_filter = models.CharField(max_length=256, default="", blank=True)
     status = models.CharField(max_length=32, choices=StatusChoice.choices(),
         default=StatusChoice.ANNOTATION)
 
@@ -310,7 +329,6 @@ class TrackedShape(Shape):
 
 class TrackedShapeAttributeVal(AttributeVal):
     shape = models.ForeignKey(TrackedShape, on_delete=models.CASCADE)
-
 
 class Plugin(models.Model):
     name = models.SlugField(max_length=32, primary_key=True)

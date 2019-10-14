@@ -4,7 +4,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.0.0.alpha] - 2020-02-XX
+### Added
+- Server only support for projects. Extend REST API v1 (/api/v1/projects*).
+- Ability to [get basic information about users without admin permissions](
+https://github.com/opencv/cvat/issues/750).
+- Changed REST API: removed PUT and added DELETE methods for /api/v1/users/ID.
+
+### Changed
+-
+
+### Deprecated
+-
+
+### Removed
+-
+
+### Fixed
+- [Mask problem on coco json style](https://github.com/opencv/cvat/issues/718)
+
+### Security
+-
+
+## [0.5.0] - 2019-10-12
 ### Added
 - A converter to YOLO format
 - Installation guide
@@ -18,15 +40,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Ability to create a custom extractors for unsupported media types
 - Added in PDF extractor
 - Added in a command line model manager tester
+- Ability to dump/load annotations in several formats from UI (CVAT, Pascal VOC, YOLO, MS COCO, png mask, TFRecord)
+- Auth for REST API (api/v1/auth/): login, logout, register, ...
+- Preview for the new CVAT UI (dashboard only) is available: http://localhost:9080/
+- Added command line tool for performing common task operations (/utils/cli/)
 
 ### Changed
 - Outside and keyframe buttons in the side panel for all interpolation shapes (they were only for boxes before)
-
-### Deprecated
--
+- Improved error messages on the client side (#511)
 
 ### Removed
--
+- "Flip images" has been removed. UI now contains rotation features.
 
 ### Fixed
 - Incorrect width of shapes borders in some cases
@@ -37,10 +61,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Installation of CVAT with OpenVINO on the Windows platform
 - Background color was always black in utils/mask/converter.py
 - Exception in attribute annotation mode when a label are switched to a value without any attributes
-- Handling of wrong labelamp json file in auto annotation (https://github.com/opencv/cvat/issues/554)
+- Handling of wrong labelamp json file in auto annotation (<https://github.com/opencv/cvat/issues/554>)
+- No default attributes in dumped annotation (<https://github.com/opencv/cvat/issues/601>)
+- Required field "Frame Filter" on admin page during a task modifying (#666)
+- Dump annotation errors for a task with several segments (#610, #500)
+- Invalid label parsing during a task creating (#628)
+- Button "Open Task" in the annotation view
+- Creating a video task with 0 overlap
 
 ### Security
--
+- Upgraded Django, djangorestframework, and other packages
 
 ## [0.4.2] - 2019-06-03
 ### Fixed

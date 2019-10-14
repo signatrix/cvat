@@ -12,7 +12,8 @@ from rest_framework import status
 from django.conf import settings
 from django.contrib.auth.models import User, Group
 from cvat.apps.engine.models import (Task, Segment, Job, StatusChoice,
-    AttributeType)
+    AttributeType, Project)
+from cvat.apps.annotation.models import AnnotationFormat
 from unittest import mock
 import io
 import xml.etree.ElementTree as ET
@@ -39,11 +40,11 @@ def create_db_users(cls):
     user_dummy.groups.add(group_user)
 
     cls.admin = user_admin
-    cls.owner = user_owner
-    cls.assignee = user_assignee
-    cls.annotator = user_annotator
-    cls.observer = user_observer
-    cls.user = user_dummy
+    cls.owner = cls.user1 = user_owner
+    cls.assignee = cls.user2 = user_assignee
+    cls.annotator = cls.user3 = user_annotator
+    cls.observer = cls.user4 = user_observer
+    cls.user = cls.user5 = user_dummy
 
 def create_db_task(data):
     db_task = Task.objects.create(**data)
@@ -67,7 +68,7 @@ def create_db_task(data):
 
     return db_task
 
-def create_dummy_db_tasks(obj):
+def create_dummy_db_tasks(obj, project=None):
     tasks = []
 
     data = {
@@ -78,7 +79,8 @@ def create_dummy_db_tasks(obj):
         "segment_size": 100,
         "z_order": False,
         "image_quality": 75,
-        "size": 100
+        "size": 100,
+        "project": project
     }
     db_task = create_db_task(data)
     tasks.append(db_task)
@@ -90,7 +92,8 @@ def create_dummy_db_tasks(obj):
         "segment_size": 100,
         "z_order": True,
         "image_quality": 50,
-        "size": 200
+        "size": 200,
+        "project": project
     }
     db_task = create_db_task(data)
     tasks.append(db_task)
@@ -103,7 +106,8 @@ def create_dummy_db_tasks(obj):
         "segment_size": 100,
         "z_order": False,
         "image_quality": 75,
-        "size": 100
+        "size": 100,
+        "project": project
     }
     db_task = create_db_task(data)
     tasks.append(db_task)
@@ -115,12 +119,60 @@ def create_dummy_db_tasks(obj):
         "segment_size": 50,
         "z_order": False,
         "image_quality": 95,
-        "size": 50
+        "size": 50,
+        "project": project
     }
     db_task = create_db_task(data)
     tasks.append(db_task)
 
     return tasks
+
+def create_dummy_db_projects(obj):
+    projects = []
+
+    data = {
+        "name": "my empty project",
+        "owner": obj.owner,
+        "assignee": obj.assignee,
+    }
+    db_project = Project.objects.create(**data)
+    projects.append(db_project)
+
+    data = {
+        "name": "my project without assignee",
+        "owner": obj.user,
+    }
+    db_project = Project.objects.create(**data)
+    create_dummy_db_tasks(obj, db_project)
+    projects.append(db_project)
+
+    data = {
+        "name": "my big project",
+        "owner": obj.owner,
+        "assignee": obj.assignee,
+    }
+    db_project = Project.objects.create(**data)
+    create_dummy_db_tasks(obj, db_project)
+    projects.append(db_project)
+
+    data = {
+        "name": "public project",
+    }
+    db_project = Project.objects.create(**data)
+    create_dummy_db_tasks(obj, db_project)
+    projects.append(db_project)
+
+    data = {
+        "name": "super project",
+        "owner": obj.admin,
+        "assignee": obj.assignee,
+    }
+    db_project = Project.objects.create(**data)
+    create_dummy_db_tasks(obj, db_project)
+    projects.append(db_project)
+
+    return projects
+
 
 class ForceLogin:
     def __init__(self, user, client):
@@ -195,9 +247,9 @@ class JobGetAPITestCase(APITestCase):
 
     def test_api_v1_jobs_id_no_auth(self):
         response = self._run_api_v1_jobs_id(self.job.id, None)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         response = self._run_api_v1_jobs_id(self.job.id + 10, None)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class JobUpdateAPITestCase(APITestCase):
@@ -265,9 +317,9 @@ class JobUpdateAPITestCase(APITestCase):
     def test_api_v1_jobs_id_no_auth(self):
         data = {"status": StatusChoice.ANNOTATION, "assignee": self.user.id}
         response = self._run_api_v1_jobs_id(self.job.id, None, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         response = self._run_api_v1_jobs_id(self.job.id + 10, None, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 class JobPartialUpdateAPITestCase(JobUpdateAPITestCase):
     def _run_api_v1_jobs_id(self, jid, user, data):
@@ -316,7 +368,7 @@ class ServerAboutAPITestCase(APITestCase):
 
     def test_api_v1_server_about_no_auth(self):
         response = self._run_api_v1_server_about(None)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 class ServerExceptionAPITestCase(APITestCase):
     def setUp(self):
@@ -359,7 +411,7 @@ class ServerExceptionAPITestCase(APITestCase):
 
     def test_api_v1_server_exception_no_auth(self):
         response = self._run_api_v1_server_exception(None)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class ServerLogsAPITestCase(APITestCase):
@@ -407,55 +459,71 @@ class ServerLogsAPITestCase(APITestCase):
 
     def test_api_v1_server_logs_no_auth(self):
         response = self._run_api_v1_server_logs(None)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class UserListAPITestCase(APITestCase):
+class UserAPITestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
+        create_db_users(self)
 
-    @classmethod
-    def setUpTestData(cls):
-        create_db_users(cls)
+    def _check_response(self, user, response, is_full=True):
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self._check_data(user, response.data, is_full)
 
+    def _check_data(self, user, data, is_full):
+        self.assertEqual(data["id"], user.id)
+        self.assertEqual(data["username"], user.username)
+        self.assertEqual(data["first_name"], user.first_name)
+        self.assertEqual(data["last_name"], user.last_name)
+        self.assertEqual(data["email"], user.email)
+        extra_check = self.assertIn if is_full else self.assertNotIn
+        extra_check("groups", data)
+        extra_check("is_staff", data)
+        extra_check("is_superuser", data)
+        extra_check("is_active", data)
+        extra_check("last_login", data)
+        extra_check("date_joined", data)
+
+class UserListAPITestCase(UserAPITestCase):
     def _run_api_v1_users(self, user):
         with ForceLogin(user, self.client):
             response = self.client.get('/api/v1/users')
 
         return response
 
+    def _check_response(self, user, response, is_full):
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        for user_info in response.data['results']:
+            db_user = getattr(self, user_info['username'])
+            self._check_data(db_user, user_info, is_full)
+
     def test_api_v1_users_admin(self):
         response = self._run_api_v1_users(self.admin)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertListEqual(
-            ["admin", "user1", "user2", "user3", "user4", "user5"],
-            [res["username"] for res in response.data["results"]])
+        self._check_response(self.admin, response, True)
 
     def test_api_v1_users_user(self):
         response = self._run_api_v1_users(self.user)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self._check_response(self.user, response, False)
+
+    def test_api_v1_users_annotator(self):
+        response = self._run_api_v1_users(self.annotator)
+        self._check_response(self.annotator, response, False)
+
+    def test_api_v1_users_observer(self):
+        response = self._run_api_v1_users(self.observer)
+        self._check_response(self.observer, response, False)
 
     def test_api_v1_users_no_auth(self):
         response = self._run_api_v1_users(None)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-class UserSelfAPITestCase(APITestCase):
-    def setUp(self):
-        self.client = APIClient()
-
-    @classmethod
-    def setUpTestData(cls):
-        create_db_users(cls)
-
+class UserSelfAPITestCase(UserAPITestCase):
     def _run_api_v1_users_self(self, user):
         with ForceLogin(user, self.client):
             response = self.client.get('/api/v1/users/self')
 
         return response
-
-    def _check_response(self, user, response):
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["username"], user.username)
 
     def test_api_v1_users_self_admin(self):
         response = self._run_api_v1_users_self(self.admin)
@@ -469,12 +537,266 @@ class UserSelfAPITestCase(APITestCase):
         response = self._run_api_v1_users_self(self.annotator)
         self._check_response(self.annotator, response)
 
+    def test_api_v1_users_self_observer(self):
+        response = self._run_api_v1_users_self(self.observer)
+        self._check_response(self.observer, response)
 
     def test_api_v1_users_self_no_auth(self):
         response = self._run_api_v1_users_self(None)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class UserGetAPITestCase(UserAPITestCase):
+    def _run_api_v1_users_id(self, user, user_id):
+        with ForceLogin(user, self.client):
+            response = self.client.get('/api/v1/users/{}'.format(user_id))
+
+        return response
+
+    def test_api_v1_users_id_admin(self):
+        response = self._run_api_v1_users_id(self.admin, self.user.id)
+        self._check_response(self.user, response, True)
+
+        response = self._run_api_v1_users_id(self.admin, self.admin.id)
+        self._check_response(self.admin, response, True)
+
+        response = self._run_api_v1_users_id(self.admin, self.owner.id)
+        self._check_response(self.owner, response, True)
+
+    def test_api_v1_users_id_user(self):
+        response = self._run_api_v1_users_id(self.user, self.user.id)
+        self._check_response(self.user, response, True)
+
+        response = self._run_api_v1_users_id(self.user, self.owner.id)
+        self._check_response(self.owner, response, False)
+
+    def test_api_v1_users_id_annotator(self):
+        response = self._run_api_v1_users_id(self.annotator, self.annotator.id)
+        self._check_response(self.annotator, response, True)
+
+        response = self._run_api_v1_users_id(self.annotator, self.user.id)
+        self._check_response(self.user, response, False)
+
+    def test_api_v1_users_id_observer(self):
+        response = self._run_api_v1_users_id(self.observer, self.observer.id)
+        self._check_response(self.observer, response, True)
+
+        response = self._run_api_v1_users_id(self.observer, self.user.id)
+        self._check_response(self.user, response, False)
+
+    def test_api_v1_users_id_no_auth(self):
+        response = self._run_api_v1_users_id(None, self.user.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class UserPartialUpdateAPITestCase(UserAPITestCase):
+    def _run_api_v1_users_id(self, user, user_id, data):
+        with ForceLogin(user, self.client):
+            response = self.client.patch('/api/v1/users/{}'.format(user_id), data=data)
+
+        return response
+
+    def _check_response_with_data(self, user, response, data, is_full):
+        # refresh information about the user from DB
+        user = User.objects.get(id=user.id)
+        for k,v in data.items():
+            self.assertEqual(response.data[k], v)
+        self._check_response(user, response, is_full)
+
+    def test_api_v1_users_id_admin_partial(self):
+        data = {"username": "user09", "last_name": "my last name"}
+        response = self._run_api_v1_users_id(self.admin, self.user.id, data)
+
+        self._check_response_with_data(self.user, response, data, True)
+
+    def test_api_v1_users_id_user_partial(self):
+        data = {"username": "user10", "first_name": "my name"}
+        response = self._run_api_v1_users_id(self.user, self.user.id, data)
+        self._check_response_with_data(self.user, response, data, False)
+
+        data = {"is_staff": True}
+        response = self._run_api_v1_users_id(self.user, self.user.id, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        data = {"username": "admin", "is_superuser": True}
+        response = self._run_api_v1_users_id(self.user, self.user.id, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        data = {"username": "non_active", "is_active": False}
+        response = self._run_api_v1_users_id(self.user, self.user.id, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        data = {"username": "annotator01", "first_name": "slave"}
+        response = self._run_api_v1_users_id(self.user, self.annotator.id, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-class UserGetAPITestCase(APITestCase):
+    def test_api_v1_users_id_no_auth_partial(self):
+        data = {"username": "user12"}
+        response = self._run_api_v1_users_id(None, self.user.id, data)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class UserDeleteAPITestCase(UserAPITestCase):
+    def _run_api_v1_users_id(self, user, user_id):
+        with ForceLogin(user, self.client):
+            response = self.client.delete('/api/v1/users/{}'.format(user_id))
+
+        return response
+
+    def test_api_v1_users_id_admin(self):
+        response = self._run_api_v1_users_id(self.admin, self.user.id)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+        response = self._run_api_v1_users_id(self.admin, self.admin.id)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_api_v1_users_id_user(self):
+        response = self._run_api_v1_users_id(self.user, self.owner.id)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self._run_api_v1_users_id(self.user, self.user.id)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_api_v1_users_id_annotator(self):
+        response = self._run_api_v1_users_id(self.annotator, self.user.id)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self._run_api_v1_users_id(self.annotator, self.annotator.id)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_api_v1_users_id_observer(self):
+        response = self._run_api_v1_users_id(self.observer, self.user.id)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self._run_api_v1_users_id(self.observer, self.observer.id)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_api_v1_users_id_no_auth(self):
+        response = self._run_api_v1_users_id(None, self.user.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class ProjectListAPITestCase(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    @classmethod
+    def setUpTestData(cls):
+        create_db_users(cls)
+        cls.projects = create_dummy_db_projects(cls)
+
+    def _run_api_v1_projects(self, user, params=""):
+        with ForceLogin(user, self.client):
+            response = self.client.get('/api/v1/projects{}'.format(params))
+
+        return response
+
+    def test_api_v1_projects_admin(self):
+        response = self._run_api_v1_projects(self.admin)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            sorted([project.name for project in self.projects]),
+            sorted([res["name"] for res in response.data["results"]]))
+
+    def test_api_v1_projects_user(self):
+        response = self._run_api_v1_projects(self.user)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            sorted([project.name for project in self.projects
+                if 'my empty project' != project.name]),
+            sorted([res["name"] for res in response.data["results"]]))
+
+    def test_api_v1_projects_observer(self):
+        response = self._run_api_v1_projects(self.observer)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            sorted([project.name for project in self.projects]),
+            sorted([res["name"] for res in response.data["results"]]))
+
+    def test_api_v1_projects_no_auth(self):
+        response = self._run_api_v1_projects(None)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+class ProjectGetAPITestCase(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    @classmethod
+    def setUpTestData(cls):
+        create_db_users(cls)
+        cls.projects = create_dummy_db_projects(cls)
+
+    def _run_api_v1_projects_id(self, pid, user):
+        with ForceLogin(user, self.client):
+            response = self.client.get('/api/v1/projects/{}'.format(pid))
+
+        return response
+
+    def _check_response(self, response, db_project):
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["name"], db_project.name)
+        owner = db_project.owner.id if db_project.owner else None
+        self.assertEqual(response.data["owner"], owner)
+        assignee = db_project.assignee.id if db_project.assignee else None
+        self.assertEqual(response.data["assignee"], assignee)
+        self.assertEqual(response.data["status"], db_project.status)
+
+    def _check_api_v1_projects_id(self, user):
+        for db_project in self.projects:
+            response = self._run_api_v1_projects_id(db_project.id, user)
+            if user and user.has_perm("engine.project.access", db_project):
+                self._check_response(response, db_project)
+            elif user:
+                self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+            else:
+                self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_api_v1_projects_id_admin(self):
+        self._check_api_v1_projects_id(self.admin)
+
+    def test_api_v1_projects_id_user(self):
+        self._check_api_v1_projects_id(self.user)
+
+    def test_api_v1_projects_id_observer(self):
+        self._check_api_v1_projects_id(self.observer)
+
+    def test_api_v1_projects_id_no_auth(self):
+        self._check_api_v1_projects_id(None)
+
+class ProjectDeleteAPITestCase(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    @classmethod
+    def setUpTestData(cls):
+        create_db_users(cls)
+        cls.projects = create_dummy_db_projects(cls)
+
+    def _run_api_v1_projects_id(self, pid, user):
+        with ForceLogin(user, self.client):
+            response = self.client.delete('/api/v1/projects/{}'.format(pid), format="json")
+
+        return response
+
+    def _check_api_v1_projects_id(self, user):
+        for db_project in self.projects:
+            response = self._run_api_v1_projects_id(db_project.id, user)
+            if user and user.has_perm("engine.project.delete", db_project):
+                self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            elif user:
+                self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+            else:
+                self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_api_v1_projects_id_admin(self):
+        self._check_api_v1_projects_id(self.admin)
+
+    def test_api_v1_projects_id_user(self):
+        self._check_api_v1_projects_id(self.user)
+
+    def test_api_v1_projects_id_observer(self):
+        self._check_api_v1_projects_id(self.observer)
+
+    def test_api_v1_projects_id_no_auth(self):
+        self._check_api_v1_projects_id(None)
+
+class ProjectCreateAPITestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
 
@@ -482,109 +804,190 @@ class UserGetAPITestCase(APITestCase):
     def setUpTestData(cls):
         create_db_users(cls)
 
-    def _run_api_v1_users_id(self, user, user_id):
+    def _run_api_v1_projects(self, user, data):
         with ForceLogin(user, self.client):
-            response = self.client.get('/api/v1/users/{}'.format(user_id))
+            response = self.client.post('/api/v1/projects', data=data, format="json")
 
         return response
 
-    def _check_response(self, user, response):
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["id"], user.id)
-        self.assertEqual(response.data["username"], user.username)
+    def _check_response(self, response, user, data):
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["name"], data["name"])
+        self.assertEqual(response.data["owner"], data.get("owner", user.id))
+        self.assertEqual(response.data["assignee"], data.get("assignee"))
+        self.assertEqual(response.data["bug_tracker"], data.get("bug_tracker", ""))
+        self.assertEqual(response.data["status"], StatusChoice.ANNOTATION)
 
-    def test_api_v1_users_id_admin(self):
-        response = self._run_api_v1_users_id(self.admin, self.user.id)
-        self._check_response(self.user, response)
+    def _check_api_v1_projects(self, user, data):
+        response = self._run_api_v1_projects(user, data)
+        if user and user.has_perm("engine.project.create"):
+            self._check_response(response, user, data)
+        elif user:
+            self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        else:
+            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        response = self._run_api_v1_users_id(self.admin, self.admin.id)
-        self._check_response(self.admin, response)
+    def test_api_v1_projects_admin(self):
+        data = {
+            "name": "new name for the project",
+            "bug_tracker": "http://example.com"
+        }
+        self._check_api_v1_projects(self.admin, data)
 
-        response = self._run_api_v1_users_id(self.admin, self.owner.id)
-        self._check_response(self.owner, response)
+        data = {
+            "owner": self.owner.id,
+            "assignee": self.assignee.id,
+            "name": "new name for the project"
+        }
+        self._check_api_v1_projects(self.admin, data)
 
-    def test_api_v1_users_id_user(self):
-        response = self._run_api_v1_users_id(self.user, self.user.id)
-        self._check_response(self.user, response)
+        data = {
+            "owner": self.admin.id,
+            "name": "2"
+        }
+        self._check_api_v1_projects(self.admin, data)
 
-        response = self._run_api_v1_users_id(self.user, self.owner.id)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_api_v1_users_id_annotator(self):
-        response = self._run_api_v1_users_id(self.annotator, self.annotator.id)
-        self._check_response(self.annotator, response)
+    def test_api_v1_projects_user(self):
+        data = {
+            "name": "Dummy name",
+            "bug_tracker": "it is just text"
+        }
+        self._check_api_v1_projects(self.user, data)
 
-        response = self._run_api_v1_users_id(self.annotator, self.user.id)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        data = {
+            "owner": self.owner.id,
+            "assignee": self.assignee.id,
+            "name": "My import project with data"
+        }
+        self._check_api_v1_projects(self.user, data)
 
-    def test_api_v1_users_id_no_auth(self):
-        response = self._run_api_v1_users_id(None, self.user.id)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-class UserUpdateAPITestCase(APITestCase):
+    def test_api_v1_projects_observer(self):
+        data = {
+            "name": "My Project #1",
+            "owner": self.owner.id,
+            "assignee": self.assignee.id
+        }
+        self._check_api_v1_projects(self.observer, data)
+
+    def test_api_v1_projects_no_auth(self):
+        data = {
+            "name": "My Project #2",
+            "owner": self.admin.id,
+        }
+        self._check_api_v1_projects(None, data)
+
+class ProjectPartialUpdateAPITestCase(APITestCase):
     def setUp(self):
         self.client = APIClient()
-        create_db_users(self)
 
-    def _run_api_v1_users_id(self, user, user_id, data):
+    @classmethod
+    def setUpTestData(cls):
+        create_db_users(cls)
+        cls.projects = create_dummy_db_projects(cls)
+
+    def _run_api_v1_projects_id(self, pid, user, data):
         with ForceLogin(user, self.client):
-            response = self.client.put('/api/v1/users/{}'.format(user_id), data=data)
+            response = self.client.patch('/api/v1/projects/{}'.format(pid),
+                data=data, format="json")
 
         return response
 
-    def test_api_v1_users_id_admin(self):
-        data = {"username": "user09", "groups": ["user", "admin"],
-            "first_name": "my name"}
-        response = self._run_api_v1_users_id(self.admin, self.user.id, data)
-
+    def _check_response(self, response, db_project, data):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        user09 = User.objects.get(id=self.user.id)
-        self.assertEqual(user09.username, data["username"])
-        self.assertEqual(user09.first_name, data["first_name"])
+        name = data.get("name", db_project.name)
+        self.assertEqual(response.data["name"], name)
+        owner = db_project.owner.id if db_project.owner else None
+        owner = data.get("owner", owner)
+        self.assertEqual(response.data["owner"], owner)
+        assignee = db_project.assignee.id if db_project.assignee else None
+        assignee = data.get("assignee", assignee)
+        self.assertEqual(response.data["assignee"], assignee)
+        self.assertEqual(response.data["status"], db_project.status)
 
-    def test_api_v1_users_id_user(self):
-        data = {"username": "user10", "groups": ["user", "annotator"],
-            "first_name": "my name"}
-        response = self._run_api_v1_users_id(self.user, self.user.id, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def _check_api_v1_projects_id(self, user, data):
+        for db_project in self.projects:
+            response = self._run_api_v1_projects_id(db_project.id, user, data)
+            if user and user.has_perm("engine.project.change", db_project):
+                self._check_response(response, db_project, data)
+            elif user:
+                self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+            else:
+                self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-    def test_api_v1_users_id_annotator(self):
-        data = {"username": "user11", "groups": ["annotator"],
-            "first_name": "my name"}
-        response = self._run_api_v1_users_id(self.annotator, self.user.id, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_api_v1_projects_id_admin(self):
+        data = {
+            "name": "new name for the project",
+            "owner": self.owner.id,
+        }
+        self._check_api_v1_projects_id(self.admin, data)
 
-    def test_api_v1_users_id_no_auth(self):
-        data = {"username": "user12", "groups": ["user", "observer"],
-            "first_name": "my name"}
-        response = self._run_api_v1_users_id(None, self.user.id, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_api_v1_projects_id_user(self):
+        data = {
+            "name": "new name for the project",
+            "owner": self.assignee.id,
+        }
+        self._check_api_v1_projects_id(self.user, data)
 
-class UserPartialUpdateAPITestCase(UserUpdateAPITestCase):
-    def _run_api_v1_users_id(self, user, user_id, data):
+    def test_api_v1_projects_id_observer(self):
+        data = {
+            "name": "new name for the project",
+        }
+        self._check_api_v1_projects_id(self.observer, data)
+
+    def test_api_v1_projects_id_no_auth(self):
+        data = {
+            "name": "new name for the project",
+        }
+        self._check_api_v1_projects_id(None, data)
+
+class ProjectListOfTasksAPITestCase(APITestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+    @classmethod
+    def setUpTestData(cls):
+        create_db_users(cls)
+        cls.projects = create_dummy_db_projects(cls)
+
+    def _run_api_v1_projects_id_tasks(self, user, pid):
         with ForceLogin(user, self.client):
-            response = self.client.patch('/api/v1/users/{}'.format(user_id), data=data)
+            response = self.client.get('/api/v1/projects/{}/tasks'.format(pid))
 
         return response
 
-    def test_api_v1_users_id_admin_partial(self):
-        data = {"username": "user09", "last_name": "my last name"}
-        response = self._run_api_v1_users_id(self.admin, self.user.id, data)
-
+    def test_api_v1_projects_id_tasks_admin(self):
+        project = self.projects[1]
+        response = self._run_api_v1_projects_id_tasks(self.admin, project.id)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        user09 = User.objects.get(id=self.user.id)
-        self.assertEqual(user09.username, data["username"])
-        self.assertEqual(user09.last_name, data["last_name"])
+        self.assertListEqual(
+            sorted([task.name for task in project.tasks.all()]),
+            sorted([res["name"] for res in response.data["results"]]))
 
-    def test_api_v1_users_id_user_partial(self):
-        data = {"username": "user10", "first_name": "my name"}
-        response = self._run_api_v1_users_id(self.user, self.user.id, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_api_v1_projects_id_tasks_user(self):
+        project = self.projects[1]
+        response = self._run_api_v1_projects_id_tasks(self.user, project.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            sorted([task.name for task in project.tasks.all()
+                if  task.owner in [None, self.user] or
+                    task.assignee in [None, self.user]]),
+            sorted([res["name"] for res in response.data["results"]]))
 
-    def test_api_v1_users_id_no_auth_partial(self):
-        data = {"username": "user12"}
-        response = self._run_api_v1_users_id(None, self.user.id, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+    def test_api_v1_projects_id_tasks_observer(self):
+        project = self.projects[1]
+        response = self._run_api_v1_projects_id_tasks(self.observer, project.id)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertListEqual(
+            sorted([task.name for task in project.tasks.all()]),
+            sorted([res["name"] for res in response.data["results"]]))
+
+    def test_api_v1_projects_id_tasks_no_auth(self):
+        project = self.projects[1]
+        response = self._run_api_v1_projects_id_tasks(None, project.id)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
 
 class TaskListAPITestCase(APITestCase):
     def setUp(self):
@@ -625,7 +1028,7 @@ class TaskListAPITestCase(APITestCase):
 
     def test_api_v1_tasks_no_auth(self):
         response = self._run_api_v1_tasks(None)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 class TaskGetAPITestCase(APITestCase):
     def setUp(self):
@@ -666,8 +1069,10 @@ class TaskGetAPITestCase(APITestCase):
             response = self._run_api_v1_tasks_id(db_task.id, user)
             if user and user.has_perm("engine.task.access", db_task):
                 self._check_response(response, db_task)
-            else:
+            elif user:
                 self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+            else:
+                self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_api_v1_tasks_id_admin(self):
         self._check_api_v1_tasks_id(self.admin)
@@ -701,8 +1106,10 @@ class TaskDeleteAPITestCase(APITestCase):
             response = self._run_api_v1_tasks_id(db_task.id, user)
             if user and user.has_perm("engine.task.delete", db_task):
                 self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-            else:
+            elif user:
                 self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+            else:
+                self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_api_v1_tasks_id_admin(self):
         self._check_api_v1_tasks_id(self.admin)
@@ -768,8 +1175,10 @@ class TaskUpdateAPITestCase(APITestCase):
             response = self._run_api_v1_tasks_id(db_task.id, user, data)
             if user and user.has_perm("engine.task.change", db_task):
                 self._check_response(response, db_task, data)
-            else:
+            elif user:
                 self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+            else:
+                self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_api_v1_tasks_id_admin(self):
         data = {
@@ -836,15 +1245,17 @@ class TaskPartialUpdateAPITestCase(TaskUpdateAPITestCase):
 
     def test_api_v1_tasks_id_admin_partial(self):
         data = {
-            "name": "new name for the task",
-            "owner": self.owner.id
+            "name": "new name for the task #2",
         }
         self._check_api_v1_tasks_id(self.admin, data)
 
         data = {
-            "name": "new name for the task #2",
+            "name": "new name for the task",
+            "owner": self.owner.id
         }
         self._check_api_v1_tasks_id(self.admin, data)
+        # Now owner is updated, but self.db_tasks are obsolete
+        # We can't do any tests without owner in data below
 
 
     def test_api_v1_tasks_id_user_partial(self):
@@ -920,8 +1331,10 @@ class TaskCreateAPITestCase(APITestCase):
         response = self._run_api_v1_tasks(user, data)
         if user and user.has_perm("engine.task.create"):
             self._check_response(response, user, data)
-        else:
+        elif user:
             self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        else:
+            self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_api_v1_tasks_admin(self):
         data = {
@@ -1125,7 +1538,7 @@ class TaskDataAPITestCase(APITestCase):
             ]
         }
         response = self._create_task(None, data)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 def compare_objects(self, obj1, obj2, ignore_keys):
     if isinstance(obj1, dict):
@@ -1168,7 +1581,7 @@ class JobAnnotationAPITestCase(APITestCase):
                             "mutable": False,
                             "input_type": "select",
                             "default_value": "mazda",
-                            "values": ["bmw", "mazda", "reno"]
+                            "values": ["bmw", "mazda", "renault"]
                         },
                         {
                             "name": "parked",
@@ -1203,6 +1616,27 @@ class JobAnnotationAPITestCase(APITestCase):
 
         return (task, jobs)
 
+    @staticmethod
+    def _get_default_attr_values(task):
+        default_attr_values = {}
+        for label in task["labels"]:
+            default_attr_values[label["id"]] = {
+                "mutable": [],
+                "immutable": [],
+                "all": [],
+            }
+            for attr in label["attributes"]:
+                default_value = {
+                    "spec_id": attr["id"],
+                    "value": attr["default_value"],
+                }
+                if attr["mutable"]:
+                    default_attr_values[label["id"]]["mutable"].append(default_value)
+                else:
+                    default_attr_values[label["id"]]["immutable"].append(default_value)
+                default_attr_values[label["id"]]["all"].append(default_value)
+        return default_attr_values
+
     def _put_api_v1_jobs_id_data(self, jid, user, data):
         with ForceLogin(user, self.client):
             response = self.client.put("/api/v1/jobs/{}/annotations".format(jid),
@@ -1232,7 +1666,8 @@ class JobAnnotationAPITestCase(APITestCase):
         return response
 
     def _check_response(self, response, data):
-        if response.status_code != status.HTTP_403_FORBIDDEN:
+        if not response.status_code in [
+            status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED]:
             compare_objects(self, data, response.data, ignore_keys=["id"])
 
     def _run_api_v1_jobs_id_annotations(self, owner, assignee, annotator):
@@ -1242,9 +1677,9 @@ class JobAnnotationAPITestCase(APITestCase):
             HTTP_204_NO_CONTENT = status.HTTP_204_NO_CONTENT
             HTTP_400_BAD_REQUEST = status.HTTP_400_BAD_REQUEST
         else:
-            HTTP_200_OK = status.HTTP_403_FORBIDDEN
-            HTTP_204_NO_CONTENT = status.HTTP_403_FORBIDDEN
-            HTTP_400_BAD_REQUEST = status.HTTP_403_FORBIDDEN
+            HTTP_200_OK = status.HTTP_401_UNAUTHORIZED
+            HTTP_204_NO_CONTENT = status.HTTP_401_UNAUTHORIZED
+            HTTP_400_BAD_REQUEST = status.HTTP_401_UNAUTHORIZED
 
         job = jobs[0]
         data = {
@@ -1278,7 +1713,7 @@ class JobAnnotationAPITestCase(APITestCase):
                         },
                         {
                             "spec_id": task["labels"][0]["attributes"][1]["id"],
-                            "value": task["labels"][0]["attributes"][0]["default_value"]
+                            "value": task["labels"][0]["attributes"][1]["default_value"]
                         }
                     ],
                     "points": [1.0, 2.1, 100, 300.222],
@@ -1300,7 +1735,12 @@ class JobAnnotationAPITestCase(APITestCase):
                     "frame": 0,
                     "label_id": task["labels"][0]["id"],
                     "group": None,
-                    "attributes": [],
+                    "attributes": [
+                        {
+                            "spec_id": task["labels"][0]["attributes"][0]["id"],
+                            "value": task["labels"][0]["attributes"][0]["values"][0]
+                        },
+                    ],
                     "shapes": [
                         {
                             "frame": 0,
@@ -1310,13 +1750,9 @@ class JobAnnotationAPITestCase(APITestCase):
                             "outside": False,
                             "attributes": [
                                 {
-                                    "spec_id": task["labels"][0]["attributes"][0]["id"],
-                                    "value": task["labels"][0]["attributes"][0]["values"][0]
-                                },
-                                {
                                     "spec_id": task["labels"][0]["attributes"][1]["id"],
-                                    "value": task["labels"][0]["attributes"][0]["default_value"]
-                                }
+                                    "value": task["labels"][0]["attributes"][1]["default_value"]
+                                },
                             ]
                         },
                         {
@@ -1347,6 +1783,8 @@ class JobAnnotationAPITestCase(APITestCase):
                 },
             ]
         }
+
+        default_attr_values = self._get_default_attr_values(task)
         response = self._put_api_v1_jobs_id_data(job["id"], annotator, data)
         data["version"] += 1 # need to update the version
         self.assertEqual(response.status_code, HTTP_200_OK)
@@ -1354,6 +1792,9 @@ class JobAnnotationAPITestCase(APITestCase):
 
         response = self._get_api_v1_jobs_id_data(job["id"], annotator)
         self.assertEqual(response.status_code, HTTP_200_OK)
+        # server should add default attribute values if puted data doesn't contain it
+        data["tags"][0]["attributes"] = default_attr_values[data["tags"][0]["label_id"]]["all"]
+        data["tracks"][0]["shapes"][1]["attributes"] = default_attr_values[data["tracks"][0]["label_id"]]["mutable"]
         self._check_response(response, data)
 
         response = self._delete_api_v1_jobs_id_data(job["id"], annotator)
@@ -1392,7 +1833,7 @@ class JobAnnotationAPITestCase(APITestCase):
                         },
                         {
                             "spec_id": task["labels"][0]["attributes"][1]["id"],
-                            "value": task["labels"][0]["attributes"][0]["default_value"]
+                            "value": task["labels"][0]["attributes"][1]["default_value"]
                         }
                     ],
                     "points": [1.0, 2.1, 100, 300.222],
@@ -1414,7 +1855,12 @@ class JobAnnotationAPITestCase(APITestCase):
                     "frame": 0,
                     "label_id": task["labels"][0]["id"],
                     "group": None,
-                    "attributes": [],
+                    "attributes": [
+                        {
+                            "spec_id": task["labels"][0]["attributes"][0]["id"],
+                            "value": task["labels"][0]["attributes"][0]["values"][0]
+                        },
+                    ],
                     "shapes": [
                         {
                             "frame": 0,
@@ -1424,13 +1870,9 @@ class JobAnnotationAPITestCase(APITestCase):
                             "outside": False,
                             "attributes": [
                                 {
-                                    "spec_id": task["labels"][0]["attributes"][0]["id"],
-                                    "value": task["labels"][0]["attributes"][0]["values"][0]
-                                },
-                                {
                                     "spec_id": task["labels"][0]["attributes"][1]["id"],
-                                    "value": task["labels"][0]["attributes"][0]["default_value"]
-                                }
+                                    "value": task["labels"][0]["attributes"][1]["default_value"]
+                                },
                             ]
                         },
                         {
@@ -1469,10 +1911,14 @@ class JobAnnotationAPITestCase(APITestCase):
 
         response = self._get_api_v1_jobs_id_data(job["id"], annotator)
         self.assertEqual(response.status_code, HTTP_200_OK)
+        # server should add default attribute values if puted data doesn't contain it
+        data["tags"][0]["attributes"] = default_attr_values[data["tags"][0]["label_id"]]["all"]
+        data["tracks"][0]["shapes"][1]["attributes"] = default_attr_values[data["tracks"][0]["label_id"]]["mutable"]
         self._check_response(response, data)
 
         data = response.data
-        if response.status_code != status.HTTP_403_FORBIDDEN:
+        if not response.status_code in [
+            status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED]:
             data["tags"][0]["label_id"] = task["labels"][0]["id"]
             data["shapes"][0]["points"] = [1, 2, 3.0, 100, 120, 1, 2, 4.0]
             data["shapes"][0]["type"] = "polygon"
@@ -1565,7 +2011,7 @@ class JobAnnotationAPITestCase(APITestCase):
                                 },
                                 {
                                     "spec_id": task["labels"][0]["attributes"][1]["id"],
-                                    "value": task["labels"][0]["attributes"][0]["default_value"]
+                                    "value": task["labels"][0]["attributes"][1]["default_value"]
                                 }
                             ]
                         },
@@ -1609,6 +2055,29 @@ class JobAnnotationAPITestCase(APITestCase):
         self._run_api_v1_jobs_id_annotations(self.user, self.assignee,
             self.assignee)
 
+    def test_api_v1_jobs_id_annotations_observer(self):
+        _, jobs = self._create_task(self.user, self.assignee)
+        job = jobs[0]
+        data = {
+            "version": 0,
+            "tags": [],
+            "shapes": [],
+            "tracks": []
+        }
+
+        response = self._get_api_v1_jobs_id_data(job["id"], self.observer)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = self._put_api_v1_jobs_id_data(job["id"], self.observer, data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self._patch_api_v1_jobs_id_data(job["id"], self.observer, "create", data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+        response = self._delete_api_v1_jobs_id_data(job["id"], self.observer)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+
     def test_api_v1_jobs_id_annotations_no_auth(self):
         self._run_api_v1_jobs_id_annotations(self.user, self.assignee, None)
 
@@ -1636,7 +2105,7 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
     def _dump_api_v1_tasks_id_annotations(self, pk, user, query_params=""):
         with ForceLogin(user, self.client):
             response = self.client.get(
-                "/api/v1/tasks/{0}/annotations/my_task_{0}{1}".format(pk, query_params))
+                "/api/v1/tasks/{0}/annotations/my_task_{0}?{1}".format(pk, query_params))
 
         return response
 
@@ -1649,7 +2118,8 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
         return response
 
     def _check_response(self, response, data):
-        if response.status_code != status.HTTP_403_FORBIDDEN:
+        if not response.status_code in [
+            status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN]:
             compare_objects(self, data, response.data, ignore_keys=["id"])
 
     def _run_api_v1_tasks_id_annotations(self, owner, assignee, annotator):
@@ -1661,11 +2131,11 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
             HTTP_202_ACCEPTED = status.HTTP_202_ACCEPTED
             HTTP_201_CREATED = status.HTTP_201_CREATED
         else:
-            HTTP_200_OK = status.HTTP_403_FORBIDDEN
-            HTTP_204_NO_CONTENT = status.HTTP_403_FORBIDDEN
-            HTTP_400_BAD_REQUEST = status.HTTP_403_FORBIDDEN
-            HTTP_202_ACCEPTED = status.HTTP_403_FORBIDDEN
-            HTTP_201_CREATED = status.HTTP_403_FORBIDDEN
+            HTTP_200_OK = status.HTTP_401_UNAUTHORIZED
+            HTTP_204_NO_CONTENT = status.HTTP_401_UNAUTHORIZED
+            HTTP_400_BAD_REQUEST = status.HTTP_401_UNAUTHORIZED
+            HTTP_202_ACCEPTED = status.HTTP_401_UNAUTHORIZED
+            HTTP_201_CREATED = status.HTTP_401_UNAUTHORIZED
 
         data = {
             "version": 0,
@@ -1721,7 +2191,12 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
                     "frame": 0,
                     "label_id": task["labels"][0]["id"],
                     "group": None,
-                    "attributes": [],
+                    "attributes": [
+                        {
+                            "spec_id": task["labels"][0]["attributes"][0]["id"],
+                            "value": task["labels"][0]["attributes"][0]["values"][0]
+                        },
+                    ],
                     "shapes": [
                         {
                             "frame": 0,
@@ -1731,12 +2206,8 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
                             "outside": False,
                             "attributes": [
                                 {
-                                    "spec_id": task["labels"][0]["attributes"][0]["id"],
-                                    "value": task["labels"][0]["attributes"][0]["values"][0]
-                                },
-                                {
                                     "spec_id": task["labels"][0]["attributes"][1]["id"],
-                                    "value": task["labels"][0]["attributes"][0]["default_value"]
+                                    "value": task["labels"][0]["attributes"][1]["default_value"]
                                 }
                             ]
                         },
@@ -1770,10 +2241,15 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
         }
         response = self._put_api_v1_tasks_id_annotations(task["id"], annotator, data)
         data["version"] += 1
+
         self.assertEqual(response.status_code, HTTP_200_OK)
         self._check_response(response, data)
 
+        default_attr_values = self._get_default_attr_values(task)
         response = self._get_api_v1_tasks_id_annotations(task["id"], annotator)
+        # server should add default attribute values if puted data doesn't contain it
+        data["tags"][0]["attributes"] = default_attr_values[data["tags"][0]["label_id"]]["all"]
+        data["tracks"][0]["shapes"][1]["attributes"] = default_attr_values[data["tracks"][0]["label_id"]]["mutable"]
         self.assertEqual(response.status_code, HTTP_200_OK)
         self._check_response(response, data)
 
@@ -1835,7 +2311,12 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
                     "frame": 0,
                     "label_id": task["labels"][0]["id"],
                     "group": None,
-                    "attributes": [],
+                    "attributes": [
+                        {
+                            "spec_id": task["labels"][0]["attributes"][0]["id"],
+                            "value": task["labels"][0]["attributes"][0]["values"][0]
+                        },
+                    ],
                     "shapes": [
                         {
                             "frame": 0,
@@ -1845,12 +2326,8 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
                             "outside": False,
                             "attributes": [
                                 {
-                                    "spec_id": task["labels"][0]["attributes"][0]["id"],
-                                    "value": task["labels"][0]["attributes"][0]["values"][0]
-                                },
-                                {
                                     "spec_id": task["labels"][0]["attributes"][1]["id"],
-                                    "value": task["labels"][0]["attributes"][0]["default_value"]
+                                    "value": task["labels"][0]["attributes"][1]["default_value"]
                                 }
                             ]
                         },
@@ -1889,11 +2366,15 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
         self._check_response(response, data)
 
         response = self._get_api_v1_tasks_id_annotations(task["id"], annotator)
+        # server should add default attribute values if puted data doesn't contain it
+        data["tags"][0]["attributes"] = default_attr_values[data["tags"][0]["label_id"]]["all"]
+        data["tracks"][0]["shapes"][1]["attributes"] = default_attr_values[data["tracks"][0]["label_id"]]["mutable"]
         self.assertEqual(response.status_code, HTTP_200_OK)
         self._check_response(response, data)
 
         data = response.data
-        if response.status_code != status.HTTP_403_FORBIDDEN:
+        if not response.status_code in [
+            status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED]:
             data["tags"][0]["label_id"] = task["labels"][0]["id"]
             data["shapes"][0]["points"] = [1, 2, 3.0, 100, 120, 1, 2, 4.0]
             data["shapes"][0]["type"] = "polygon"
@@ -2022,15 +2503,20 @@ class TaskAnnotationAPITestCase(JobAnnotationAPITestCase):
             "create", data)
         self.assertEqual(response.status_code, HTTP_400_BAD_REQUEST)
 
-        response = self._dump_api_v1_tasks_id_annotations(task["id"], annotator)
-        self.assertEqual(response.status_code, HTTP_202_ACCEPTED)
+        cvat_format = AnnotationFormat.objects.get(name="CVAT")
+        for annotation_handler in cvat_format.annotationdumper_set.all():
+            response = self._dump_api_v1_tasks_id_annotations(task["id"], annotator,
+                "format={}".format(annotation_handler.display_name))
+            self.assertEqual(response.status_code, HTTP_202_ACCEPTED)
 
-        response = self._dump_api_v1_tasks_id_annotations(task["id"], annotator)
-        self.assertEqual(response.status_code, HTTP_201_CREATED)
+            response = self._dump_api_v1_tasks_id_annotations(task["id"], annotator,
+                "format={}".format(annotation_handler.display_name))
+            self.assertEqual(response.status_code, HTTP_201_CREATED)
 
-        response = self._dump_api_v1_tasks_id_annotations(task["id"], annotator, "?action=download")
-        self.assertEqual(response.status_code, HTTP_200_OK)
-        self._check_dump_response(response, task, jobs, data)
+            response = self._dump_api_v1_tasks_id_annotations(task["id"], annotator,
+                "action=download&format={}".format(annotation_handler.display_name))
+            self.assertEqual(response.status_code, HTTP_200_OK)
+            self._check_dump_response(response, task, jobs, data)
 
     def _check_dump_response(self, response, task, jobs, data):
         if response.status_code == status.HTTP_200_OK:
@@ -2191,4 +2677,4 @@ class ServerShareAPITestCase(APITestCase):
 
     def test_api_v1_server_share_no_auth(self):
         response = self._run_api_v1_server_share(None, "/")
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

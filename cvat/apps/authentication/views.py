@@ -1,15 +1,17 @@
-
 # Copyright (C) 2018 Intel Corporation
 #
 # SPDX-License-Identifier: MIT
 
 from django.shortcuts import render, redirect
 from django.conf import settings
-from django.http import JsonResponse
 from django.contrib.auth import login, authenticate
-from django.middleware.csrf import get_token
+from rest_framework import views
+from rest_framework.exceptions import ValidationError
+from rest_framework.response import Response
+from furl import furl
 
 from . import forms
+from . import signature
 
 def register_user(request):
     if request.method == 'POST':
@@ -25,6 +27,15 @@ def register_user(request):
         form = forms.NewUserForm()
     return render(request, 'register.html', {'form': form})
 
+class SigningView(views.APIView):
+    def post(self, request):
+        url = request.data.get('url')
+        if not url:
+            raise ValidationError('Please provide `url` parameter')
 
-def get_csrf(request):
-    return JsonResponse({'csrf': get_token(request)})
+        signer = signature.Signer()
+        url = self.request.build_absolute_uri(url)
+        sign = signer.sign(self.request.user, url)
+
+        url = furl(url).add({signature.QUERY_PARAM: sign}).url
+        return Response(url)

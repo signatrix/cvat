@@ -5,17 +5,17 @@
  */
 
 /* global
-    AnnotationParser:false
     userConfirm:false
-    dumpAnnotationRequest: false
     LabelsInfo:false
     showMessage:false
     showOverlay:false
+    isDefaultFormat:false
 */
 
 class TaskView {
-    constructor(task) {
+    constructor(task, annotationFormats) {
         this.init(task);
+        this._annotationFormats = annotationFormats;
 
         this._UI = null;
     }
@@ -28,6 +28,7 @@ class TaskView {
     async _remove() {
         try {
             await this._task.delete();
+            this._disable();
         } catch (exception) {
             let { message } = exception;
             if (exception instanceof window.cvat.exceptions.ServerError) {
@@ -35,8 +36,6 @@ class TaskView {
             }
             showMessage(message);
         }
-
-        this._disable();
     }
 
     _update() {
@@ -49,7 +48,7 @@ class TaskView {
         $('#dashboardCancelUpdate').on('click', () => {
             dashboardUpdateModal.remove();
         });
-        $('#dashboardSubmitUpdate').on('click', () => {
+        $('#dashboardSubmitUpdate').on('click', async () => {
             let jsonLabels = null;
             try {
                 jsonLabels = LabelsInfo.deserialize($('#dashboardNewLabels').prop('value'));
@@ -61,7 +60,7 @@ class TaskView {
             try {
                 const labels = jsonLabels.map(label => new window.cvat.classes.Label(label));
                 this._task.labels = labels;
-                this._task.save();
+                await this._task.save();
                 showMessage('Task has been successfully updated');
             } catch (exception) {
                 let { message } = exception;
@@ -75,147 +74,34 @@ class TaskView {
         });
     }
 
-    _upload() {
-        async function saveChunk(parsed) {
-            const CHUNK_SIZE = 30000;
-            let chunk = null;
-
-            class Chunk {
-                constructor() {
-                    this.shapes = [];
-                    this.tracks = [];
-                    this.tags = [];
-                    this.capasity = CHUNK_SIZE;
-                    this.version = 0;
-                }
-
-                length() {
-                    return this.tags.length
-                           + this.shapes.length
-                           + this.tracks.reduce((sum, track) => sum + track.shapes.length, 0);
-                }
-
-                isFull() {
-                    return this.length() >= this.capasity;
-                }
-
-                isEmpty() {
-                    return this.length() === 0;
-                }
-
-                clear() {
-                    this.shapes = [];
-                    this.tracks = [];
-                    this.tags = [];
-                }
-
-                export() {
-                    return {
-                        shapes: this.shapes,
-                        tracks: this.tracks,
-                        tags: this.tags,
-                        version: this.version,
-                    };
-                }
-
-                async save(taskID) {
+    _upload(uploadAnnotationButton, format) {
+        const button = $(uploadAnnotationButton);
+        $(`<input type="file" accept=".${format.format}">`)
+            .on('change', async (onChangeEvent) => {
+                const file = onChangeEvent.target.files[0];
+                $(onChangeEvent.target).remove();
+                if (file) {
+                    button.prop('disabled', true);
                     try {
-                        const response = await $.ajax({
-                            url: `/api/v1/tasks/${taskID}/annotations?action=create`,
-                            type: 'PATCH',
-                            data: JSON.stringify(chunk.export()),
-                            contentType: 'application/json',
-                        });
-                        this.version = response.version;
-                        this.clear();
+                        await this._task.annotations.upload(file, format);
                     } catch (error) {
-                        throw error;
+                        showMessage(error.message);
+                    } finally {
+                        button.prop('disabled', false);
                     }
                 }
-            }
-
-            const splitAndSave = async (chunkForSave, prop, splitStep) => {
-                for (let start = 0; start < parsed[prop].length; start += splitStep) {
-                    Array.prototype.push.apply(chunkForSave[prop],
-                        parsed[prop].slice(start, start + splitStep));
-                    if (chunkForSave.isFull()) {
-                        await chunkForSave.save(this._task.id);
-                    }
-                }
-                // save tail
-                if (!chunkForSave.isEmpty()) {
-                    await chunkForSave.save(this._task.id);
-                }
-            };
-
-            chunk = new Chunk();
-            // TODO tags aren't supported by parser
-            // await split(chunk, "tags", CHUNK_SIZE);
-            await splitAndSave(chunk, 'shapes', CHUNK_SIZE);
-            await splitAndSave(chunk, 'tracks', 1);
-        }
-
-        async function save(parsed) {
-            await $.ajax({
-                url: `/api/v1/tasks/${this._task.id}/annotations`,
-                type: 'DELETE',
-            });
-
-            await saveChunk.call(this, parsed);
-        }
-
-        async function onload(overlay, text) {
-            try {
-                overlay.setMessage('Required data are being downloaded from the server..');
-                const imageCache = await $.get(`/api/v1/tasks/${this._task.id}/frames/meta`);
-                const labelsCopy = JSON.parse(JSON.stringify(this._task.labels
-                    .map(el => el.toJSON())));
-                const parser = new AnnotationParser({
-                    start: 0,
-                    stop: this._task.size,
-                    image_meta_data: imageCache,
-                }, new LabelsInfo(labelsCopy));
-
-                overlay.setMessage('The annotation file is being parsed..');
-                const parsed = parser.parse(text);
-
-                overlay.setMessage('The annotation is being saved..');
-                await save.call(this, parsed);
-
-                const message = 'Annotation have been successfully uploaded';
-                showMessage(message);
-            } catch (errorData) {
-                let message = null;
-                if (typeof (errorData) === 'string') {
-                    message = `Can not upload annotations. ${errorData}`;
-                } else {
-                    message = `Can not upload annotations. Code: ${errorData.status}. `
-                        + `Message: ${errorData.responseText || errorData.statusText}`;
-                }
-                showMessage(message);
-            } finally {
-                overlay.remove();
-            }
-        }
-
-        $('<input type="file" accept="text/xml">').on('change', (onChangeEvent) => {
-            const file = onChangeEvent.target.files[0];
-            $(onChangeEvent.target).remove();
-            if (file) {
-                const overlay = showOverlay('File is being parsed..');
-                const fileReader = new FileReader();
-                fileReader.onload = (onloadEvent) => {
-                    onload.call(this, overlay, onloadEvent.target.result);
-                };
-                fileReader.readAsText(file);
-            }
-        }).click();
+            }).click();
     }
 
-    async _dump(button) {
+    async _dump(button, format) {
         button.disabled = true;
         try {
-            await dumpAnnotationRequest(this._task.id, this._task.name);
+            const url = await this._task.annotations.dump(this._task.name, format);
+            const a = document.createElement('a');
+            a.href = `${url}`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
         } catch (error) {
             showMessage(error.message);
         } finally {
@@ -242,15 +128,46 @@ class TaskView {
             }),
         );
 
-
         const buttonsContainer = $('<div class="dashboardButtonsUI"> </div>').appendTo(this._UI);
-        $('<button class="regular dashboardButtonUI"> Dump Annotation </button>').on('click', (e) => {
-            this._dump(e.target);
-        }).appendTo(buttonsContainer);
+        const downloadButton = $('<select class="regular dashboardButtonUI"'
+            + 'style="text-align-last: center;"> Dump Annotation </select>');
+        $('<option selected disabled> Dump Annotation </option>').appendTo(downloadButton);
 
-        $('<button class="regular dashboardButtonUI"> Upload Annotation </button>').on('click', () => {
-            userConfirm('The current annotation will be lost. Are you sure?', () => this._upload());
-        }).appendTo(buttonsContainer);
+        const uploadButton = $('<select class="regular dashboardButtonUI"'
+        + 'style="text-align-last: center;"> Upload Annotation </select>');
+        $('<option selected disabled> Upload Annotation </option>').appendTo(uploadButton);
+
+        const dumpers = {};
+        const loaders = {};
+
+        for (const format of this._annotationFormats) {
+            for (const dumper of format.dumpers) {
+                dumpers[dumper.name] = dumper;
+                const item = $(`<option>${dumper.name}</li>`);
+                if (isDefaultFormat(dumper.name, this._task.mode)) {
+                    item.addClass('bold');
+                }
+                item.appendTo(downloadButton);
+            }
+
+            for (const loader of format.loaders) {
+                loaders[loader.name] = loader;
+                $(`<option>${loader.name}</li>`).appendTo(uploadButton);
+            }
+        }
+
+        downloadButton.on('change', (e) => {
+            this._dump(e.target, dumpers[e.target.value]);
+            downloadButton.prop('value', 'Dump Annotation');
+        });
+
+        uploadButton.on('change', (e) => {
+            this._upload(e.target, loaders[e.target.value]);
+            uploadButton.prop('value', 'Upload Annotation');
+        });
+
+        downloadButton.appendTo(buttonsContainer);
+        uploadButton.appendTo(buttonsContainer);
 
         $('<button class="regular dashboardButtonUI"> Update Task </button>').on('click', () => {
             this._update();
@@ -290,13 +207,14 @@ class TaskView {
 
 
 class DashboardView {
-    constructor(metaData, taskData) {
+    constructor(metaData, taskData, annotationFormats) {
         this._dashboardList = taskData.results;
         this._maxUploadSize = metaData.max_upload_size;
         this._maxUploadCount = metaData.max_upload_count;
         this._baseURL = metaData.base_url;
         this._sharePath = metaData.share_path;
         this._params = {};
+        this._annotationFormats = annotationFormats;
 
         this._setupList();
         this._setupTaskSearch();
@@ -321,9 +239,16 @@ class DashboardView {
 
                 let tasks = null;
                 try {
-                    tasks = await window.cvat.tasks.get(Object.assign({}, {
+                    const id = (new URLSearchParams(window.location.search)).get('id');
+                    const filters = Object.assign({}, {
                         page,
-                    }, this._params));
+                    }, this._params);
+
+                    if (id !== null) {
+                        filters.id = +id;
+                    }
+
+                    tasks = await window.cvat.tasks.get(filters);
                 } catch (exception) {
                     let { message } = exception;
                     if (exception instanceof window.cvat.exceptions.ServerError) {
@@ -348,7 +273,7 @@ class DashboardView {
                 }));
 
                 for (const task of tasks) {
-                    const taskView = new TaskView(task);
+                    const taskView = new TaskView(task, this._annotationFormats);
                     dashboardList.append(taskView.render(baseURL));
                 }
 
@@ -397,6 +322,8 @@ class DashboardView {
                 this._params.search = search;
             }
 
+            window.history.replaceState(null, null,
+                `${window.location.origin}${window.location.pathname}`);
             dashboardPagination.twbsPagination('show', 1);
         });
 
@@ -408,81 +335,6 @@ class DashboardView {
     }
 
     _setupCreateDialog() {
-        function updateSelectedFiles() {
-            switch (files.length) {
-            case 0:
-                filesLabel.text('No Files');
-                break;
-            case 1:
-                filesLabel.text(typeof(files[0]) === 'string' ? files[0] : files[0].name);
-                break;
-            default:
-                filesLabel.text(files.length + ' files');
-            }
-        }
-
-
-        function validateName(name) {
-            const math = name.match('[a-zA-Z0-9_]+');
-            return math !== null;
-        }
-
-        function validateLabels(labels) {
-            try {
-                LabelsInfo.deserialize(labels)
-                return true;
-            } catch (error) {
-                return false;
-            }
-        }
-
-        function validateBugTracker(bugTracker) {
-            return !bugTracker || !!bugTracker.match(/^http[s]?/);
-        }
-
-        function validateSegmentSize(segmentSize) {
-            return (segmentSize >= 100 && segmentSize <= 50000);
-        }
-
-        function validateOverlapSize(overlapSize, segmentSize) {
-            return (overlapSize >= 0 && overlapSize <= segmentSize - 1);
-        }
-
-        function validateStopFrame(stopFrame, startFrame) {
-            return !customStopFrame.prop('checked') || stopFrame >= startFrame;
-        }
-
-        function requestCreatingStatus(tid, onUpdateStatus, onSuccess, onError) {
-            function checkCallback() {
-                $.get(`/api/v1/tasks/${tid}/status`).done((data) => {
-                    if (['Queued', 'Started'].includes(data.state)) {
-                        if (data.message !== '') {
-                            onUpdateStatus(data.message);
-                        }
-                        setTimeout(checkCallback, 1000);
-                    } else {
-                        if (data.state === 'Finished') {
-                            onSuccess();
-                        }
-                        else if (data.state === 'Failed') {
-                            const message = `Can not create task. ${data.message}`;
-                            onError(message);
-                        } else {
-                            const message = `Unknown state has been received: ${data.state}`;
-                            onError(message);
-                        }
-
-                    }
-                }).fail((errorData) => {
-                    const message = `Can not check task status. Code: ${errorData.status}. ` +
-                        `Message: ${errorData.responseText || errorData.statusText}`;
-                    onError(message);
-                });
-            }
-
-            setTimeout(checkCallback, 1000);
-        }
-
         const dashboardCreateTaskButton = $('#dashboardCreateTaskButton');
         const createModal = $('#dashboardCreateModal');
         const nameInput = $('#dashboardNameInput');
@@ -570,6 +422,10 @@ class DashboardView {
             return (overlapSize >= 0 && overlapSize <= segmentSize - 1);
         }
 
+        function validateStopFrame(stop, start) {
+            return !customStopFrame.prop('checked') || stop >= start;
+        }
+
         dashboardCreateTaskButton.on('click', () => {
             $('#dashboardCreateModal').removeClass('hidden');
         });
@@ -589,7 +445,8 @@ class DashboardView {
         localSourceRadio.on('click', () => {
             if (source === 'local') {
                 return;
-            } else if (source === 'remote') {
+            }
+            if (source === 'remote') {
                 selectFiles.parent().removeClass('hidden');
                 remoteFileInput.parent().addClass('hidden');
             }
@@ -612,7 +469,8 @@ class DashboardView {
         shareSourceRadio.on('click', () => {
             if (source === 'share') {
                 return;
-            } else if (source === 'remote') {
+            }
+            if (source === 'remote') {
                 selectFiles.parent().removeClass('hidden');
                 remoteFileInput.parent().addClass('hidden');
             }
@@ -658,8 +516,8 @@ class DashboardView {
             updateSelectedFiles();
         });
 
-        remoteFileInput.on('change', function(e) {
-            let text = remoteFileInput.prop('value');
+        remoteFileInput.on('change', () => {
+            const text = remoteFileInput.prop('value');
             files = text.split('\n').map(f => f.trim()).filter(f => f.length > 0);
         });
 
@@ -676,12 +534,12 @@ class DashboardView {
             zOrder = e.target.checked;
         });
 
-        customSegmentSize.on('change', (e) => segmentSizeInput.prop('disabled', !e.target.checked));
-        customOverlapSize.on('change', (e) => overlapSizeInput.prop('disabled', !e.target.checked));
-        customCompressQuality.on('change', (e) => imageQualityInput.prop('disabled', !e.target.checked));
-        customStartFrame.on('change', (e) => startFrameInput.prop('disabled', !e.target.checked));
-        customStopFrame.on('change', (e) => stopFrameInput.prop('disabled', !e.target.checked));
-        customFrameFilter.on('change', (e) => frameFilterInput.prop('disabled', !e.target.checked));
+        customSegmentSize.on('change', e => segmentSizeInput.prop('disabled', !e.target.checked));
+        customOverlapSize.on('change', e => overlapSizeInput.prop('disabled', !e.target.checked));
+        customCompressQuality.on('change', e => imageQualityInput.prop('disabled', !e.target.checked));
+        customStartFrame.on('change', e => startFrameInput.prop('disabled', !e.target.checked));
+        customStopFrame.on('change', e => stopFrameInput.prop('disabled', !e.target.checked));
+        customFrameFilter.on('change', e => frameFilterInput.prop('disabled', !e.target.checked));
 
         segmentSizeInput.on('change', () => {
             const value = Math.clamp(
@@ -716,8 +574,8 @@ class DashboardView {
             compressQuality = value;
         });
 
-        startFrameInput.on('change', function() {
-            let value = Math.max(
+        startFrameInput.on('change', () => {
+            const value = Math.max(
                 +startFrameInput.prop('value'),
                 +startFrameInput.prop('min')
             );
@@ -725,8 +583,9 @@ class DashboardView {
             startFrameInput.prop('value', value);
             startFrame = value;
         });
-        stopFrameInput.on('change', function() {
-            let value = Math.max(
+
+        stopFrameInput.on('change', () => {
+            const value = Math.max(
                 +stopFrameInput.prop('value'),
                 +stopFrameInput.prop('min')
             );
@@ -734,7 +593,8 @@ class DashboardView {
             stopFrameInput.prop('value', value);
             stopFrame = value;
         });
-        frameFilterInput.on('change', function() {
+
+        frameFilterInput.on('change', () => {
             frameFilter = frameFilterInput.prop('value');
         });
 
@@ -759,7 +619,7 @@ class DashboardView {
 
             if (!validateBugTracker()) {
                 taskMessage.css('color', 'red');
-                taskMessage.text('Bad bag tracker link');
+                taskMessage.text('Bad bug tracker link');
                 return;
             }
 
@@ -825,6 +685,15 @@ class DashboardView {
             if (customFrameFilter.prop('checked')) {
                 description.frame_filter = frameFilter;
             }
+            if (customStartFrame.prop('checked')) {
+                description.start_frame = startFrame;
+            }
+            if (customStopFrame.prop('checked')) {
+                description.stop_frame = stopFrame;
+            }
+            if (customFrameFilter.prop('checked')) {
+                description.frame_filter = frameFilter;
+            }
 
             try {
                 let task = new window.cvat.classes.Task(description);
@@ -865,9 +734,10 @@ window.addEventListener('DOMContentLoaded', () => {
         // TODO: Use REST API in order to get meta
         $.get('/dashboard/meta'),
         $.get(`/api/v1/tasks${window.location.search}`),
-    ).then((metaData, taskData) => {
+        window.cvat.server.formats(),
+    ).then((metaData, taskData, annotationFormats) => {
         try {
-            new DashboardView(metaData[0], taskData[0]);
+            new DashboardView(metaData[0], taskData[0], annotationFormats);
         } catch (exception) {
             $('#content').empty();
             const message = `Can not build CVAT dashboard. Exception: ${exception}.`;
