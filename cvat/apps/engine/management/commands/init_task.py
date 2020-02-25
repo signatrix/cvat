@@ -54,6 +54,16 @@ class Command(BaseCommand):
                                        "values": ["false"]
                                    },
                                ]},  # 'cart ~radio=type:empty,full,unclear ~checkbox=difficult:false',
+                      'basket': {"name": "basket",
+                                 "attributes": [
+                                   {
+                                       "name": "type",
+                                       "mutable": True,
+                                       "input_type": "radio",
+                                       "default_value": "empty",
+                                       "values": ["empty", "full", "unclear"],
+                                   },
+                               ]},  # 'basket ~radio=type:empty,full,unclear
                       'person': {"name": "person",
                                  "attributes": [
                                      {

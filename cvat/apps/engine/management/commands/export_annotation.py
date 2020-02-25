@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
 def dump_annotation_for_task(task, dump_folder, overwrite=False):
     output_path = os.path.join(dump_folder, task.name.replace('/', '_') + ".xml")
-    print("\nExporting annotations for " + task.name + " to " + output_path.replace("/home/django/share/", "/mnt/data/raw_video/"))
+    print(output_path.replace("/home/django/share/", "/mnt/data/raw_video/"))
     display_name = "CVAT XML 1.1 for videos"
     cvat_dumper = AnnotationDumper.objects.get(display_name=display_name)
     annotation.dump_task_data(task.id, user, output_path, cvat_dumper, 'http', 'localhost:8080')

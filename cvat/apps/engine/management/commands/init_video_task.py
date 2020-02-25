@@ -33,7 +33,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--video_path', type=str, required=True)
-        parser.add_argument('--labels', type=str, required=False, nargs='+', default=['cart', 'person'])
+        parser.add_argument('--labels', type=str, required=False, nargs='+', default=['cart'])
         parser.add_argument('--xml_path', type=str, required=False)
 
     def build_labels(self, labels):
@@ -54,6 +54,16 @@ class Command(BaseCommand):
                                        "values": ["false"]
                                    },
                                ]},  # 'cart ~radio=type:empty,full,unclear ~checkbox=difficult:false',
+                      'basket': {"name": "basket",
+                                 "attributes": [
+                                     {
+                                         "name": "type",
+                                         "mutable": True,
+                                         "input_type": "radio",
+                                         "default_value": "empty",
+                                         "values": ["empty", "full", "unclear"],
+                                     },
+                                 ]},  # 'basket ~radio=type:empty,full,unclear
                       'person': {"name": "person",
                                  "attributes": [
                                      {
@@ -122,9 +132,11 @@ class Command(BaseCommand):
                                     }
                                 ]},  # 'chips ~radio=type:none,in,out',
                       }
+        print(label_dict)
         wanted_labels = []
         for label in labels:
             if label not in label_dict.keys():
+                print(label_dict.keys())
                 raise ValueError("Did not recognize label " + label)
             wanted_labels.append(label_dict[label])
         return wanted_labels
@@ -160,9 +172,17 @@ class Command(BaseCommand):
         res = self.create_task(task_name, relpath, cur_user_info, user, password, labels=labels)
         print(res)
 
-        # if xml_path:
-        #     print("Adding annotations from {}".format(xml_path))
-        #     call_command('import_annotation', xml_path=xml_path, task_name=task_name)
+        if xml_path:
+            try:
+                print("Adding annotations from {}".format(xml_path))
+                call_command('import_annotation', xml_path=xml_path, task_name=task_name)
+            except:
+                pass
+        if res:
+            try:
+                os.remove(abspath)
+            except OSError as e:
+                print(f"Could not delete file at {abspath}.\n{e}")
 
     def create_task(self, task_name, full_relative_path, cur_user_info, user, password, labels=[], bug_tracker=""):
         res = {"status": False, "full_relative_path": full_relative_path}

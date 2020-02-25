@@ -5,6 +5,8 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
 from cvat.apps.engine.models import Task
+from cvat.apps.engine.annotation import delete_task_data
+
 from .export_annotation import dump_annotation_for_task
 
 
@@ -16,12 +18,17 @@ class Command(BaseCommand):
         parser.add_argument('--dump_folder', type=str, default='')
         parser.add_argument('--overwrite', '-o', action='store_true',
                             help='Overwrite annotation if already present')
+        parser.add_argument('--delete_tasks', '-d', action='store_true',
+                            help='Delete the task after a successful export')
+        parser.add_argument('--verbose', '-y', action='store_true',
+                            help='Print status updates')
 
     def handle(self, *args, **options):
         if not options['dump_folder']:
             options['dump_folder'] = os.path.join("/home/django/share/exported_annotations/", datetime.now().strftime("%Y_%m_%d"))
         if not os.path.exists(options['dump_folder']):
             os.makedirs(options['dump_folder'])
+        verbose = options['verbose']
 
         exported_tasks = []
         for user in User.objects.all():
@@ -37,17 +44,24 @@ class Command(BaseCommand):
                             print("Could not export annotation for " + task.name + "\nContinuing...")
                             continue
         if exported_tasks:
-            print('\nThe following tasks have been exported to ' + options['dump_folder'] + ':')
-            for task in exported_tasks:
-                print('    Task ' + task.name + ', assignee: ' + task.assignee.username + ', owner: ' + task.owner.username)
-            answer = input('\nShould these tasks be deleted now? (yes/no): ')
+            if verbose:
+                print('\nThe following tasks have been exported to ' + options['dump_folder'] + ':')
+                for task in exported_tasks:
+                    print('    Task ' + task.name + ', assignee: ' + task.assignee.username + ', owner: ' + task.owner.username)
+            if options['delete_tasks']:
+                answer = 'yes'
+            else:
+                answer = input('\nShould these tasks be deleted now? (yes/no): ')
             if answer in ['yes', 'Yes']:
                 for task in exported_tasks:
+                    delete_task_data(task.id, task.assignee)
                     task.delete()
             else:
-                print('\nNo tasks were deleted. Make sure you will not export them multiple times to red in the future.')
+                if verbose:
+                    print('\nNo tasks were deleted. Make sure you will not export them multiple times to red in the future.')
         else:
-            print('No completed tasks were exported.')
+            if verbose:
+                print('No completed tasks were exported.')
 
 
 def dump_annotations(task, dump_folder, overwrite=False):
