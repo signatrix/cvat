@@ -4,7 +4,7 @@
 
 import os
 
-path_prefix = os.path.join('cvat', 'apps', 'annotation')
+path_prefix = os.path.join('cvat', 'apps', 'dataset_manager', 'formats')
 BUILTIN_FORMATS = (
     os.path.join(path_prefix, 'cvat.py'),
     os.path.join(path_prefix, 'pascal_voc.py'),
@@ -12,4 +12,6 @@ BUILTIN_FORMATS = (
     os.path.join(path_prefix, 'coco.py'),
     os.path.join(path_prefix, 'mask.py'),
     os.path.join(path_prefix, 'tfrecord.py'),
+    os.path.join(path_prefix, 'mot.py'),
+    os.path.join(path_prefix, 'labelme.py'),
 )

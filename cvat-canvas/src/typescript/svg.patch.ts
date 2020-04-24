@@ -1,7 +1,9 @@
-import * as SVG from 'svg.js';
+// Copyright (C) 2019-2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
 
 /* eslint-disable */
-
+import * as SVG from 'svg.js';
 import 'svg.draggable.js';
 import 'svg.resize.js';
 import 'svg.select.js';
@@ -14,7 +16,11 @@ SVG.Element.prototype.draw = function constructor(...args: any): any {
     if (!handler) {
         originalDraw.call(this, ...args);
         handler = this.remember('_paintHandler');
-        handler.set = new SVG.Set();
+        // There is use case (drawing a single point when handler is created and destructed immediately in one stack)
+        // So, we need to check if handler still exists
+        if (handler && !handler.set) {
+            handler.set = new SVG.Set();
+        }
     } else {
         originalDraw.call(this, ...args);
     }
@@ -27,7 +33,7 @@ for (const key of Object.keys(originalDraw)) {
 
 // Create undo for polygones and polylines
 function undo(): void {
-    if (this.set.length()) {
+    if (this.set && this.set.length()) {
         this.set.members.splice(-1, 1)[0].remove();
         this.el.array().value.splice(-2, 1);
         this.el.plot(this.el.array());
@@ -157,6 +163,11 @@ SVG.Element.prototype.resize = function constructor(...args: any): any {
     if (!handler) {
         originalResize.call(this, ...args);
         handler = this.remember('_resizeHandler');
+        handler.resize = function(e: any) {
+            if (e.detail.event.button === 0) {
+                return handler.constructor.prototype.resize.call(this, e);
+            }
+        }
         handler.update = function(e: any) {
             this.m = this.el.node.getScreenCTM().inverse();
             return handler.constructor.prototype.update.call(this, e);

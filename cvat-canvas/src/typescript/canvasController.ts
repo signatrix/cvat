@@ -1,7 +1,6 @@
-/*
-* Copyright (C) 2019 Intel Corporation
-* SPDX-License-Identifier: MIT
-*/
+// Copyright (C) 2019-2020 Intel Corporation
+//
+// SPDX-License-Identifier: MIT
 
 import {
     CanvasModel,
@@ -18,6 +17,7 @@ import {
 
 export interface CanvasController {
     readonly objects: any[];
+    readonly zLayer: number | null;
     readonly focusData: FocusData;
     readonly activeElement: ActiveElement;
     readonly drawData: DrawData;
@@ -36,7 +36,6 @@ export interface CanvasController {
     enableDrag(x: number, y: number): void;
     drag(x: number, y: number): void;
     disableDrag(): void;
-
     fit(): void;
 }
 
@@ -103,6 +102,10 @@ export class CanvasControllerImpl implements CanvasController {
 
     public set geometry(geometry: Geometry) {
         this.model.geometry = geometry;
+    }
+
+    public get zLayer(): number | null {
+        return this.model.zLayer;
     }
 
     public get objects(): any[] {

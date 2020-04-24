@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2019 Intel Corporation
+* Copyright (C) 2019-2020 Intel Corporation
 * SPDX-License-Identifier: MIT
 */
 
@@ -9,11 +9,13 @@
 
 (() => {
     const PluginRegistry = require('./plugins');
+    const loggerStorage = require('./logger-storage');
     const serverProxy = require('./server-proxy');
-    const { getFrame } = require('./frames');
+    const { getFrame, getRanges, getPreview } = require('./frames');
     const { ArgumentError } = require('./exceptions');
     const { TaskStatus } = require('./enums');
     const { Label } = require('./labels');
+    const User = require('./user');
 
     function buildDublicatedAPI(prototype) {
         Object.defineProperties(prototype, {
@@ -25,9 +27,9 @@
                         return result;
                     },
 
-                    async save() {
+                    async save(onUpdate) {
                         const result = await PluginRegistry
-                            .apiWrapper.call(this, prototype.annotations.save);
+                            .apiWrapper.call(this, prototype.annotations.save, onUpdate);
                         return result;
                     },
 
@@ -55,16 +57,17 @@
                         return result;
                     },
 
-                    async get(frame, filter = {}) {
+                    async get(frame, allTracks = false, filters = []) {
                         const result = await PluginRegistry
-                            .apiWrapper.call(this, prototype.annotations.get, frame, filter);
+                            .apiWrapper.call(this, prototype.annotations.get,
+                                frame, allTracks, filters);
                         return result;
                     },
 
-                    async search(filter, frameFrom, frameTo) {
+                    async search(filters, frameFrom, frameTo) {
                         const result = await PluginRegistry
                             .apiWrapper.call(this, prototype.annotations.search,
-                                filter, frameFrom, frameTo);
+                                filters, frameFrom, frameTo);
                         return result;
                     },
 
@@ -72,12 +75,6 @@
                         const result = await PluginRegistry
                             .apiWrapper.call(this,
                                 prototype.annotations.select, objectStates, x, y);
-                        return result;
-                    },
-
-                    async hasUnsavedChanges() {
-                        const result = await PluginRegistry
-                            .apiWrapper.call(this, prototype.annotations.hasUnsavedChanges);
                         return result;
                     },
 
@@ -99,29 +96,58 @@
                                 objectStates, reset);
                         return result;
                     },
+
+                    async import(data) {
+                        const result = await PluginRegistry
+                            .apiWrapper.call(this, prototype.annotations.import, data);
+                        return result;
+                    },
+
+                    async export() {
+                        const result = await PluginRegistry
+                            .apiWrapper.call(this, prototype.annotations.export);
+                        return result;
+                    },
+
+                    async exportDataset(format) {
+                        const result = await PluginRegistry
+                            .apiWrapper.call(this, prototype.annotations.exportDataset, format);
+                        return result;
+                    },
+
+                    hasUnsavedChanges() {
+                        const result = prototype.annotations
+                            .hasUnsavedChanges.implementation.call(this);
+                        return result;
+                    },
                 },
                 writable: true,
             }),
             frames: Object.freeze({
                 value: {
-                    async get(frame) {
+                    async get(frame, isPlaying = false, step = 1) {
                         const result = await PluginRegistry
-                            .apiWrapper.call(this, prototype.frames.get, frame);
+                            .apiWrapper.call(this, prototype.frames.get, frame, isPlaying, step);
+                        return result;
+                    },
+                    async ranges() {
+                        const result = await PluginRegistry
+                            .apiWrapper.call(this, prototype.frames.ranges);
+                        return result;
+                    },
+                    async preview() {
+                        const result = await PluginRegistry
+                            .apiWrapper.call(this, prototype.frames.preview);
                         return result;
                     },
                 },
                 writable: true,
             }),
-            logs: Object.freeze({
+            logger: Object.freeze({
                 value: {
-                    async put(logType, details) {
+                    async log(logType, payload = {}, wait = false) {
                         const result = await PluginRegistry
-                            .apiWrapper.call(this, prototype.logs.put, logType, details);
-                        return result;
-                    },
-                    async save(onUpdate) {
-                        const result = await PluginRegistry
-                            .apiWrapper.call(this, prototype.logs.save, onUpdate);
+                            .apiWrapper.call(this, prototype.logger.log, logType, payload, wait);
                         return result;
                     },
                 },
@@ -129,12 +155,12 @@
             }),
             actions: Object.freeze({
                 value: {
-                    async undo(count) {
+                    async undo(count = 1) {
                         const result = await PluginRegistry
                             .apiWrapper.call(this, prototype.actions.undo, count);
                         return result;
                     },
-                    async redo(count) {
+                    async redo(count = 1) {
                         const result = await PluginRegistry
                             .apiWrapper.call(this, prototype.actions.redo, count);
                         return result;
@@ -142,6 +168,11 @@
                     async clear() {
                         const result = await PluginRegistry
                             .apiWrapper.call(this, prototype.actions.clear);
+                        return result;
+                    },
+                    async get() {
+                        const result = await PluginRegistry
+                            .apiWrapper.call(this, prototype.actions.get);
                         return result;
                     },
                 },
@@ -182,7 +213,7 @@
                 * You need upload annotations from a server again after successful executing
                 * @method upload
                 * @memberof Session.annotations
-                * @param {File} annotations - a text file with annotations
+                * @param {File} annotations - a file with annotations
                 * @param {module:API.cvat.classes.Loader} loader - a loader
                 * which will be used to upload
                 * @instance
@@ -257,23 +288,33 @@
                 * @async
             */
             /**
-                * @typedef {Object} ObjectFilter
-                * @property {string} [label] a name of a label
-                * @property {module:API.cvat.enums.ObjectType} [type]
-                * @property {module:API.cvat.enums.ObjectShape} [shape]
-                * @property {boolean} [occluded] a value of occluded property
-                * @property {boolean} [lock] a value of lock property
-                * @property {number} [width] a width of a shape
-                * @property {number} [height] a height of a shape
-                * @property {Object[]} [attributes] dictionary with "name: value" pairs
-                * @global
-            */
-            /**
                 * Get annotations for a specific frame
+                * </br> Filter supports following operators:
+                * ==, !=, >, >=, <, <=, ~= and (), |, & for grouping.
+                * </br> Filter supports properties:
+                * width, height, label, serverID, clientID, type, shape, occluded
+                * </br> All prop values are case-sensitive. CVAT uses json queries for search.
+                * </br> Examples:
+                * <ul>
+                *   <li> label=="car" | label==["road sign"] </li>
+                *   <li> width >= height </li>
+                *   <li> attr["Attribute 1"] == attr["Attribute 2"] </li>
+                *   <li> type=="track" & shape="rectangle" </li>
+                *   <li> clientID == 50 </li>
+                *   <li> (label=="car" & attr["parked"]==true)
+                * | (label=="pedestrian" & width > 150) </li>
+                *   <li> (( label==["car \"mazda\""]) &
+                * (attr["sunglass ( help ) es"]==true |
+                * (width > 150 | height > 150 & (clientID == serverID))))) </li>
+                * </ul>
+                * <b> If you have double quotes in your query string,
+                * please escape them using back slash: \" </b>
                 * @method get
                 * @param {integer} frame get objects from the frame
-                * @param {ObjectFilter[]} [filter = []]
-                * get only objects are satisfied to specific filter
+                * @param {boolean} allTracks show all tracks
+                * even if they are outside and not keyframe
+                * @param {string[]} [filters = []]
+                * get only objects that satisfied to specific filters
                 * @returns {module:API.cvat.classes.ObjectState[]}
                 * @memberof Session.annotations
                 * @throws {module:API.cvat.exceptions.PluginError}
@@ -282,13 +323,14 @@
                 * @async
             */
             /**
-                * Find frame which contains at least one object satisfied to a filter
+                * Find a frame in the range [from, to]
+                * that contains at least one object satisfied to a filter
                 * @method search
                 * @memberof Session.annotations
                 * @param {ObjectFilter} [filter = []] filter
                 * @param {integer} from lower bound of a search
                 * @param {integer} to upper bound of a search
-                * @returns {integer} the nearest frame which contains filtered objects
+                * @returns {integer|null} a frame that contains objects according to the filter
                 * @throws {module:API.cvat.exceptions.PluginError}
                 * @throws {module:API.cvat.exceptions.ArgumentError}
                 * @instance
@@ -352,12 +394,47 @@
                 * @async
             */
             /**
-                * Indicate if there are any changes in
+                * Method indicates if there are any changes in
                 * annotations which haven't been saved on a server
+                * </br><b> This function cannot be wrapped with a plugin </b>
                 * @method hasUnsavedChanges
                 * @memberof Session.annotations
                 * @returns {boolean}
                 * @throws {module:API.cvat.exceptions.PluginError}
+                * @instance
+            */
+            /**
+                *
+                * Import raw data in a collection
+                * @method import
+                * @memberof Session.annotations
+                * @param {Object} data
+                * @throws {module:API.cvat.exceptions.PluginError}
+                * @throws {module:API.cvat.exceptions.ArgumentError}
+                * @instance
+                * @async
+            */
+            /**
+                *
+                * Export a collection as a row data
+                * @method export
+                * @memberof Session.annotations
+                * @returns {Object} data
+                * @throws {module:API.cvat.exceptions.PluginError}
+                * @throws {module:API.cvat.exceptions.ArgumentError}
+                * @instance
+                * @async
+            */
+            /**
+                * Export as a dataset.
+                * Method builds a dataset in the specified format.
+                * @method exportDataset
+                * @memberof Session.annotations
+                * @param {module:String} format - a format
+                * @returns {string} An URL to the dataset file
+                * @throws {module:API.cvat.exceptions.PluginError}
+                * @throws {module:API.cvat.exceptions.ServerError}
+                * @throws {module:API.cvat.exceptions.ArgumentError}
                 * @instance
                 * @async
             */
@@ -378,37 +455,54 @@
                 * @async
                 * @throws {module:API.cvat.exceptions.PluginError}
                 * @throws {module:API.cvat.exceptions.ServerError}
+                * @throws {module:API.cvat.exceptions.DataError}
                 * @throws {module:API.cvat.exceptions.ArgumentError}
             */
 
             /**
+                * Get the first frame of a task for preview
+                * @method preview
+                * @memberof Session.frames
+                * @returns {string} - jpeg encoded image
+                * @instance
+                * @async
+                * @throws {module:API.cvat.exceptions.PluginError}
+                * @throws {module:API.cvat.exceptions.ServerError}
+                * @throws {module:API.cvat.exceptions.ArgumentError}
+            */
+
+            /**
+                * Returns the ranges of cached frames
+                * @method ranges
+                * @memberof Session.frames
+                * @returns {Array.<string>}
+                * @instance
+                * @async
+            */
+
+            /**
                 * Namespace is used for an interaction with logs
-                * @namespace logs
+                * @namespace logger
                 * @memberof Session
             */
 
             /**
-                * Append log to a log collection.
-                * Continue logs will have been added after "close" method is called
-                * @method put
-                * @memberof Session.logs
-                * @param {module:API.cvat.enums.LogType} type a type of a log
-                * @param {boolean} continuous log is a continuous log
-                * @param {Object} details any others data which will be append to log data
+                * Create a log and add it to a log collection <br>
+                * Durable logs will be added after "close" method is called for them <br>
+                * The fields "task_id" and "job_id" automatically added when add logs
+                * throught a task or a job <br>
+                * Ignore rules exist for some logs (e.g. zoomImage, changeAttribute) <br>
+                * Payload of ignored logs are shallowly combined to previous logs of the same type
+                * @method log
+                * @memberof Session.logger
+                * @param {module:API.cvat.enums.LogType | string} type - log type
+                * @param {Object} [payload = {}] - any other data that will be appended to the log
+                * @param {boolean} [wait = false] - specifies if log is durable
                 * @returns {module:API.cvat.classes.Log}
                 * @instance
                 * @async
                 * @throws {module:API.cvat.exceptions.PluginError}
                 * @throws {module:API.cvat.exceptions.ArgumentError}
-            */
-            /**
-                * Save accumulated logs on a server
-                * @method save
-                * @memberof Session.logs
-                * @throws {module:API.cvat.exceptions.PluginError}
-                * @throws {module:API.cvat.exceptions.ServerError}
-                * @instance
-                * @async
             */
 
             /**
@@ -418,28 +512,50 @@
             */
 
             /**
-                * Is a dictionary of pairs "id:action" where "id" is an identifier of an object
-                * which has been affected by undo/redo and "action" is what exactly has been
-                * done with the object. Action can be: "created", "deleted", "updated".
-                * Size of an output array equal the param "count".
-                * @typedef {Object} HistoryAction
+                * @typedef {Object} HistoryActions
+                * @property {string[]} [undo] - array of possible actions to undo
+                * @property {string[]} [redo] - array of possible actions to redo
                 * @global
             */
             /**
-                * Undo actions
+                * Make undo
                 * @method undo
                 * @memberof Session.actions
-                * @returns {HistoryAction}
+                * @param {number} [count=1] number of actions to undo
+                * @returns {number[]} Array of affected objects
+                * @throws {module:API.cvat.exceptions.PluginError}
+                * @throws {module:API.cvat.exceptions.ArgumentError}
+                * @instance
+                * @async
+            */
+            /**
+                * Make redo
+                * @method redo
+                * @memberof Session.actions
+                * @param {number} [count=1] number of actions to redo
+                * @returns {number[]} Array of affected objects
+                * @throws {module:API.cvat.exceptions.PluginError}
+                * @throws {module:API.cvat.exceptions.ArgumentError}
+                * @instance
+                * @async
+            */
+            /**
+                * Remove all actions from history
+                * @method clear
+                * @memberof Session.actions
                 * @throws {module:API.cvat.exceptions.PluginError}
                 * @instance
                 * @async
             */
             /**
-                * Redo actions
-                * @method redo
+                * Get actions
+                * @method get
                 * @memberof Session.actions
-                * @returns {HistoryAction}
+                * @returns {HistoryActions}
                 * @throws {module:API.cvat.exceptions.PluginError}
+                * @throws {module:API.cvat.exceptions.ArgumentError}
+                * @returns {Array.<Array.<string|number>>}
+                * array of pairs [action name, frame number]
                 * @instance
                 * @async
             */
@@ -520,19 +636,19 @@
                     get: () => data.id,
                 },
                 /**
-                    * Identifier of a user who is responsible for the job
+                    * Instance of a user who is responsible for the job
                     * @name assignee
-                    * @type {integer}
+                    * @type {module:API.cvat.classes.User}
                     * @memberof module:API.cvat.classes.Job
                     * @instance
                     * @throws {module:API.cvat.exceptions.ArgumentError}
                 */
                 assignee: {
                     get: () => data.assignee,
-                    set: () => (assignee) => {
-                        if (!Number.isInteger(assignee) || assignee < 0) {
+                    set: (assignee) => {
+                        if (assignee !== null && !(assignee instanceof User)) {
                             throw new ArgumentError(
-                                'Value must be a non negative integer',
+                                'Value must be a user instance',
                             );
                         }
                         data.assignee = assignee;
@@ -610,15 +726,31 @@
                 split: Object.getPrototypeOf(this).annotations.split.bind(this),
                 group: Object.getPrototypeOf(this).annotations.group.bind(this),
                 clear: Object.getPrototypeOf(this).annotations.clear.bind(this),
+                search: Object.getPrototypeOf(this).annotations.search.bind(this),
                 upload: Object.getPrototypeOf(this).annotations.upload.bind(this),
                 select: Object.getPrototypeOf(this).annotations.select.bind(this),
+                import: Object.getPrototypeOf(this).annotations.import.bind(this),
+                export: Object.getPrototypeOf(this).annotations.export.bind(this),
                 statistics: Object.getPrototypeOf(this).annotations.statistics.bind(this),
                 hasUnsavedChanges: Object.getPrototypeOf(this)
                     .annotations.hasUnsavedChanges.bind(this),
             };
 
+            this.actions = {
+                undo: Object.getPrototypeOf(this).actions.undo.bind(this),
+                redo: Object.getPrototypeOf(this).actions.redo.bind(this),
+                clear: Object.getPrototypeOf(this).actions.clear.bind(this),
+                get: Object.getPrototypeOf(this).actions.get.bind(this),
+            };
+
             this.frames = {
                 get: Object.getPrototypeOf(this).frames.get.bind(this),
+                ranges: Object.getPrototypeOf(this).frames.ranges.bind(this),
+                preview: Object.getPrototypeOf(this).frames.preview.bind(this),
+            };
+
+            this.logger = {
+                log: Object.getPrototypeOf(this).logger.log.bind(this),
             };
         }
 
@@ -677,6 +809,10 @@
                 start_frame: undefined,
                 stop_frame: undefined,
                 frame_filter: undefined,
+                data_chunk_size: undefined,
+                data_compressed_chunk_type: undefined,
+                data_original_chunk_type: undefined,
+                use_zip_chunks: undefined,
             };
 
             for (const property in data) {
@@ -780,9 +916,9 @@
                     get: () => data.mode,
                 },
                 /**
-                    * Identificator of a user who has created the task
+                    * Instance of a user who has created the task
                     * @name owner
-                    * @type {integer}
+                    * @type {module:API.cvat.classes.User}
                     * @memberof module:API.cvat.classes.Task
                     * @readonly
                     * @instance
@@ -791,19 +927,19 @@
                     get: () => data.owner,
                 },
                 /**
-                    * Identificator of a user who is responsible for the task
+                    * Instance of a user who is responsible for the task
                     * @name assignee
-                    * @type {integer}
+                    * @type {module:API.cvat.classes.User}
                     * @memberof module:API.cvat.classes.Task
                     * @instance
                     * @throws {module:API.cvat.exceptions.ArgumentError}
                 */
                 assignee: {
                     get: () => data.assignee,
-                    set: () => (assignee) => {
-                        if (!Number.isInteger(assignee) || assignee < 0) {
+                    set: (assignee) => {
+                        if (assignee !== null && !(assignee instanceof User)) {
                             throw new ArgumentError(
-                                'Value must be a non negative integer',
+                                'Value must be a user instance',
                             );
                         }
                         data.assignee = assignee;
@@ -915,6 +1051,24 @@
                     },
                 },
                 /**
+                    * @name useZipChunks
+                    * @type {boolean}
+                    * @memberof module:API.cvat.classes.Task
+                    * @instance
+                    * @throws {module:API.cvat.exceptions.ArgumentError}
+                */
+                useZipChunks: {
+                    get: () => data.use_zip_chunks,
+                    set: (useZipChunks) => {
+                        if (typeof (useZipChunks) !== 'boolean') {
+                            throw new ArgumentError(
+                                'Value must be a boolean',
+                            );
+                        }
+                        data.use_zip_chunks = useZipChunks;
+                    },
+                },
+                /**
                     * After task has been created value can be appended only.
                     * @name labels
                     * @type {module:API.cvat.classes.Label[]}
@@ -940,11 +1094,7 @@
                             }
                         }
 
-                        if (typeof (data.id) === 'undefined') {
-                            data.labels = [...labels];
-                        } else {
-                            data.labels = data.labels.concat([...labels]);
-                        }
+                        data.labels = [...labels];
                     },
                 },
                 /**
@@ -1099,6 +1249,21 @@
                         data.frame_filter = filter;
                     },
                 },
+                dataChunkSize: {
+                    get: () => data.data_chunk_size,
+                    set: (chunkSize) => {
+                        if (typeof (chunkSize) !== 'number' || chunkSize < 1) {
+                            throw new ArgumentError(
+                                `Chunk size value must be a positive number. But value ${chunkSize} has been got.`,
+                            );
+                        }
+
+                        data.data_chunk_size = chunkSize;
+                    },
+                },
+                dataChunkType: {
+                    get: () => data.data_compressed_chunk_type,
+                },
             }));
 
             // When we call a function, for example: task.annotations.get()
@@ -1113,15 +1278,33 @@
                 split: Object.getPrototypeOf(this).annotations.split.bind(this),
                 group: Object.getPrototypeOf(this).annotations.group.bind(this),
                 clear: Object.getPrototypeOf(this).annotations.clear.bind(this),
+                search: Object.getPrototypeOf(this).annotations.search.bind(this),
                 upload: Object.getPrototypeOf(this).annotations.upload.bind(this),
                 select: Object.getPrototypeOf(this).annotations.select.bind(this),
+                import: Object.getPrototypeOf(this).annotations.import.bind(this),
+                export: Object.getPrototypeOf(this).annotations.export.bind(this),
                 statistics: Object.getPrototypeOf(this).annotations.statistics.bind(this),
                 hasUnsavedChanges: Object.getPrototypeOf(this)
                     .annotations.hasUnsavedChanges.bind(this),
+                exportDataset: Object.getPrototypeOf(this)
+                    .annotations.exportDataset.bind(this),
+            };
+
+            this.actions = {
+                undo: Object.getPrototypeOf(this).actions.undo.bind(this),
+                redo: Object.getPrototypeOf(this).actions.redo.bind(this),
+                clear: Object.getPrototypeOf(this).actions.clear.bind(this),
+                get: Object.getPrototypeOf(this).actions.get.bind(this),
             };
 
             this.frames = {
                 get: Object.getPrototypeOf(this).frames.get.bind(this),
+                ranges: Object.getPrototypeOf(this).frames.ranges.bind(this),
+                preview: Object.getPrototypeOf(this).frames.preview.bind(this),
+            };
+
+            this.logger = {
+                log: Object.getPrototypeOf(this).logger.log.bind(this),
             };
         }
 
@@ -1172,6 +1355,7 @@
         putAnnotations,
         saveAnnotations,
         hasUnsavedChanges,
+        searchAnnotations,
         mergeAnnotations,
         splitAnnotations,
         groupAnnotations,
@@ -1180,6 +1364,13 @@
         annotationsStatistics,
         uploadAnnotations,
         dumpAnnotations,
+        importAnnotations,
+        exportAnnotations,
+        exportDataset,
+        undoActions,
+        redoActions,
+        clearActions,
+        getActions,
     } = require('./annotations');
 
     buildDublicatedAPI(Job.prototype);
@@ -1190,6 +1381,7 @@
         if (this.id) {
             const jobData = {
                 status: this.status,
+                assignee: this.assignee ? this.assignee.id : null,
             };
 
             await serverProxy.jobs.saveJob(this.id, jobData);
@@ -1201,7 +1393,7 @@
         );
     };
 
-    Job.prototype.frames.get.implementation = async function (frame) {
+    Job.prototype.frames.get.implementation = async function (frame, isPlaying, step) {
         if (!Number.isInteger(frame) || frame < 0) {
             throw new ArgumentError(
                 `Frame must be a positive integer. Got: "${frame}"`,
@@ -1214,20 +1406,78 @@
             );
         }
 
-        const frameData = await getFrame(this.task.id, this.task.mode, frame);
+        const frameData = await getFrame(
+            this.task.id,
+            this.task.dataChunkSize,
+            this.task.dataChunkType,
+            this.task.mode,
+            frame,
+            this.startFrame,
+            this.stopFrame,
+            isPlaying,
+            step,
+        );
         return frameData;
     };
 
+    Job.prototype.frames.ranges.implementation = async function () {
+        const rangesData = await getRanges(
+            this.task.id,
+        );
+        return rangesData;
+    };
+
     // TODO: Check filter for annotations
-    Job.prototype.annotations.get.implementation = async function (frame, filter) {
+    Job.prototype.annotations.get.implementation = async function (frame, allTracks, filters) {
+        if (!Array.isArray(filters) || filters.some((filter) => typeof (filter) !== 'string')) {
+            throw new ArgumentError(
+                'The filters argument must be an array of strings',
+            );
+        }
+
+        if (!Number.isInteger(frame)) {
+            throw new ArgumentError(
+                'The frame argument must be an integer',
+            );
+        }
+
         if (frame < this.startFrame || frame > this.stopFrame) {
             throw new ArgumentError(
                 `Frame ${frame} does not exist in the job`,
             );
         }
 
-        const annotationsData = await getAnnotations(this, frame, filter);
+        const annotationsData = await getAnnotations(this, frame, allTracks, filters);
         return annotationsData;
+    };
+
+    Job.prototype.annotations.search.implementation = function (filters, frameFrom, frameTo) {
+        if (!Array.isArray(filters) || filters.some((filter) => typeof (filter) !== 'string')) {
+            throw new ArgumentError(
+                'The filters argument must be an array of strings',
+            );
+        }
+
+        if (!Number.isInteger(frameFrom) || !Number.isInteger(frameTo)) {
+            throw new ArgumentError(
+                'The start and end frames both must be an integer',
+            );
+        }
+
+        if (frameFrom < this.startFrame || frameFrom > this.stopFrame) {
+            throw new ArgumentError(
+                'The start frame is out of the job',
+            );
+        }
+
+        if (frameTo < this.startFrame || frameTo > this.stopFrame) {
+            throw new ArgumentError(
+                'The stop frame is out of the job',
+            );
+        }
+
+        const result = searchAnnotations(this, filters, frameFrom, frameTo);
+        return result;
     };
 
     Job.prototype.annotations.save.implementation = async function (onUpdate) {
@@ -1280,8 +1530,48 @@
         return result;
     };
 
+    Job.prototype.annotations.import.implementation = function (data) {
+        const result = importAnnotations(this, data);
+        return result;
+    };
+
+    Job.prototype.annotations.export.implementation = function () {
+        const result = exportAnnotations(this);
+        return result;
+    };
+
     Job.prototype.annotations.dump.implementation = async function (name, dumper) {
         const result = await dumpAnnotations(this, name, dumper);
+        return result;
+    };
+
+    Job.prototype.annotations.exportDataset.implementation = async function (format) {
+        const result = await exportDataset(this.task, format);
+        return result;
+    };
+
+    Job.prototype.actions.undo.implementation = function (count) {
+        const result = undoActions(this, count);
+        return result;
+    };
+
+    Job.prototype.actions.redo.implementation = function (count) {
+        const result = redoActions(this, count);
+        return result;
+    };
+
+    Job.prototype.actions.clear.implementation = function () {
+        const result = clearActions(this);
+        return result;
+    };
+
+    Job.prototype.actions.get.implementation = function () {
+        const result = getActions(this);
+        return result;
+    };
+
+    Job.prototype.logger.log.implementation = async function (logType, payload, wait) {
+        const result = await this.task.logger.log(logType, { ...payload, job_id: this.id }, wait);
         return result;
     };
 
@@ -1290,49 +1580,55 @@
         if (typeof (this.id) !== 'undefined') {
             // If the task has been already created, we update it
             const taskData = {
+                assignee: this.assignee ? this.assignee.id : null,
                 name: this.name,
                 bug_tracker: this.bugTracker,
                 z_order: this.zOrder,
-                labels: [...this.labels.map(el => el.toJSON())],
+                labels: [...this.labels.map((el) => el.toJSON())],
             };
 
             await serverProxy.tasks.saveTask(this.id, taskData);
             return this;
         }
 
-        const taskData = {
+        const taskSpec = {
             name: this.name,
-            labels: this.labels.map(el => el.toJSON()),
-            image_quality: this.imageQuality,
+            labels: this.labels.map((el) => el.toJSON()),
             z_order: Boolean(this.zOrder),
         };
 
         if (typeof (this.bugTracker) !== 'undefined') {
-            taskData.bug_tracker = this.bugTracker;
+            taskSpec.bug_tracker = this.bugTracker;
         }
         if (typeof (this.segmentSize) !== 'undefined') {
-            taskData.segment_size = this.segmentSize;
+            taskSpec.segment_size = this.segmentSize;
         }
         if (typeof (this.overlap) !== 'undefined') {
-            taskData.overlap = this.overlap;
-        }
-        if (typeof (this.startFrame) !== 'undefined') {
-            taskData.start_frame = this.startFrame;
-        }
-        if (typeof (this.stopFrame) !== 'undefined') {
-            taskData.stop_frame = this.stopFrame;
-        }
-        if (typeof (this.frameFilter) !== 'undefined') {
-            taskData.frame_filter = this.frameFilter;
+            taskSpec.overlap = this.overlap;
         }
 
-        const taskFiles = {
+        const taskDataSpec = {
             client_files: this.clientFiles,
             server_files: this.serverFiles,
             remote_files: this.remoteFiles,
+            image_quality: this.imageQuality,
+            use_zip_chunks: this.useZipChunks,
         };
 
-        const task = await serverProxy.tasks.createTask(taskData, taskFiles, onUpdate);
+        if (typeof (this.startFrame) !== 'undefined') {
+            taskDataSpec.start_frame = this.startFrame;
+        }
+        if (typeof (this.stopFrame) !== 'undefined') {
+            taskDataSpec.stop_frame = this.stopFrame;
+        }
+        if (typeof (this.frameFilter) !== 'undefined') {
+            taskDataSpec.frame_filter = this.frameFilter;
+        }
+        if (typeof (this.dataChunkSize) !== 'undefined') {
+            taskDataSpec.chunk_size = this.dataChunkSize;
+        }
+
+        const task = await serverProxy.tasks.createTask(taskSpec, taskDataSpec, onUpdate);
         return new Task(task);
     };
 
@@ -1341,7 +1637,7 @@
         return result;
     };
 
-    Task.prototype.frames.get.implementation = async function (frame) {
+    Task.prototype.frames.get.implementation = async function (frame, isPlaying, step) {
         if (!Number.isInteger(frame) || frame < 0) {
             throw new ArgumentError(
                 `Frame must be a positive integer. Got: "${frame}"`,
@@ -1354,12 +1650,45 @@
             );
         }
 
-        const result = await getFrame(this.id, this.mode, frame);
+        const result = await getFrame(
+            this.id,
+            this.dataChunkSize,
+            this.dataChunkType,
+            this.mode,
+            frame,
+            0,
+            this.size - 1,
+            isPlaying,
+            step,
+        );
         return result;
     };
 
+    Job.prototype.frames.preview.implementation = async function () {
+        const frameData = await getPreview(this.task.id);
+        return frameData;
+    };
+
+    Task.prototype.frames.ranges.implementation = async function () {
+        const rangesData = await getRanges(
+            this.id,
+        );
+        return rangesData;
+    };
+
+    Task.prototype.frames.preview.implementation = async function () {
+        const frameData = await getPreview(this.id);
+        return frameData;
+    };
+
     // TODO: Check filter for annotations
-    Task.prototype.annotations.get.implementation = async function (frame, filter) {
+    Task.prototype.annotations.get.implementation = async function (frame, allTracks, filters) {
+        if (!Array.isArray(filters) || filters.some((filter) => typeof (filter) !== 'string')) {
+            throw new ArgumentError(
+                'The filters argument must be an array of strings',
+            );
+        }
+
         if (!Number.isInteger(frame) || frame < 0) {
             throw new ArgumentError(
                 `Frame must be a positive integer. Got: "${frame}"`,
@@ -1372,7 +1701,36 @@
             );
         }
 
-        const result = await getAnnotations(this, frame, filter);
+        const result = await getAnnotations(this, frame, allTracks, filters);
+        return result;
+    };
+
+    Task.prototype.annotations.search.implementation = function (filters, frameFrom, frameTo) {
+        if (!Array.isArray(filters) || filters.some((filter) => typeof (filter) !== 'string')) {
+            throw new ArgumentError(
+                'The filters argument must be an array of strings',
+            );
+        }
+
+        if (!Number.isInteger(frameFrom) || !Number.isInteger(frameTo)) {
+            throw new ArgumentError(
+                'The start and end frames both must be an integer',
+            );
+        }
+
+        if (frameFrom < 0 || frameFrom >= this.size) {
+            throw new ArgumentError(
+                'The start frame is out of the task',
+            );
+        }
+
+        if (frameTo < 0 || frameTo >= this.size) {
+            throw new ArgumentError(
+                'The stop frame is out of the task',
+            );
+        }
+
+        const result = searchAnnotations(this, filters, frameFrom, frameTo);
         return result;
     };
 
@@ -1428,6 +1786,46 @@
 
     Task.prototype.annotations.dump.implementation = async function (name, dumper) {
         const result = await dumpAnnotations(this, name, dumper);
+        return result;
+    };
+
+    Task.prototype.annotations.import.implementation = function (data) {
+        const result = importAnnotations(this, data);
+        return result;
+    };
+
+    Task.prototype.annotations.export.implementation = function () {
+        const result = exportAnnotations(this);
+        return result;
+    };
+
+    Task.prototype.annotations.exportDataset.implementation = async function (format) {
+        const result = await exportDataset(this, format);
+        return result;
+    };
+
+    Task.prototype.actions.undo.implementation = function (count) {
+        const result = undoActions(this, count);
+        return result;
+    };
+
+    Task.prototype.actions.redo.implementation = function (count) {
+        const result = redoActions(this, count);
+        return result;
+    };
+
+    Task.prototype.actions.clear.implementation = function () {
+        const result = clearActions(this);
+        return result;
+    };
+
+    Task.prototype.actions.get.implementation = function () {
+        const result = getActions(this);
+        return result;
+    };
+
+    Task.prototype.logger.log.implementation = async function (logType, payload, wait) {
+        const result = await loggerStorage.log(logType, { ...payload, task_id: this.id }, wait);
         return result;
     };
 })();

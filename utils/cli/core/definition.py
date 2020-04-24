@@ -180,7 +180,14 @@ frames_parser.add_argument(
     '--outdir',
     type=str,
     default='',
-    help='directory to save images'
+    help='directory to save images (default: CWD)'
+)
+frames_parser.add_argument(
+    '--quality',
+    type=str,
+    choices=('original', 'compressed'),
+    default='original',
+    help='choose quality of images (default: %(default)s)'
 )
 
 #######################################################################
@@ -206,5 +213,31 @@ dump_parser.add_argument(
     dest='fileformat',
     type=str,
     default='CVAT XML 1.1 for images',
+    help='annotation format (default: %(default)s)'
+)
+
+#######################################################################
+# Upload Annotations
+#######################################################################
+
+upload_parser = task_subparser.add_parser(
+    'upload',
+    description='Upload annotations for a CVAT task.'
+)
+upload_parser.add_argument(
+    'task_id',
+    type=int,
+    help='task ID'
+)
+upload_parser.add_argument(
+    'filename',
+    type=str,
+    help='upload file'
+)
+upload_parser.add_argument(
+    '--format',
+    dest='fileformat',
+    type=str,
+    default='CVAT XML 1.1',
     help='annotation format (default: %(default)s)'
 )

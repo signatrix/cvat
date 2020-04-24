@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Intel Corporation
+ * Copyright (C) 2018-2020 Intel Corporation
  *
  * SPDX-License-Identifier: MIT
  */
@@ -135,7 +135,6 @@ class ShapeMergerModel extends Listener {
                 object.shapes.push(
                     Object.assign(shapeDict[frame].interpolation.position,
                         {
-                            z_order: this._collectionModel.zOrder(frame).max,
                             frame: frame,
                             attributes: shapeAttributes
                         }
@@ -146,11 +145,11 @@ class ShapeMergerModel extends Listener {
                 let nextFrame = frame + 1;
                 let stopFrame = window.cvat.player.frames.stop;
                 let type = shapeDict[frame].shape.type;
-                if (type === 'annotation_box' && !(nextFrame in shapeDict) && nextFrame <= stopFrame) {
+                if (type.startsWith('annotation_') && !(nextFrame in shapeDict) && nextFrame <= stopFrame) {
                     let copy = Object.assign({}, object.shapes[object.shapes.length - 1]);
                     copy.outside = true;
                     copy.frame += 1;
-                    copy.z_order =  this._collectionModel.zOrder(frame).max;
+                    copy.z_order = 0;
                     copy.attributes = [];
                     object.shapes.push(copy);
                 }

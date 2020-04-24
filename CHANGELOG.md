@@ -4,12 +4,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.0.alpha] - 2020-02-XX
+## [1.0.0-beta.2] - Unreleased
 ### Added
-- Server only support for projects. Extend REST API v1 (/api/v1/projects*).
-- Ability to [get basic information about users without admin permissions](
-https://github.com/opencv/cvat/issues/750).
-- Changed REST API: removed PUT and added DELETE methods for /api/v1/users/ID.
+- Re-Identification algorithm to merging bounding boxes automatically to the new UI (<https://github.com/opencv/cvat/pull/1406>)
+- Methods ``import`` and ``export`` to import/export raw annotations for Job and Task in ``cvat-core`` (<https://github.com/opencv/cvat/pull/1406>)
+- Versioning of client packages (``cvat-core``, ``cvat-canvas``, ``cvat-ui``). Initial versions are set to 1.0.0  (<https://github.com/opencv/cvat/pull/1448>)
 
 ### Changed
 -
@@ -21,12 +20,131 @@ https://github.com/opencv/cvat/issues/750).
 -
 
 ### Fixed
-- [Mask problem on coco json style](https://github.com/opencv/cvat/issues/718)
+- Auto annotation, TF annotation and Auto segmentation apps (https://github.com/opencv/cvat/pull/1409)
+- Import works with truncated images now: "OSError:broken data stream" on corrupt images (https://github.com/opencv/cvat/pull/1430)
+- Hide functionality (H) doesn't work (<https://github.com/opencv/cvat/pull/1445>)
+- The highlighted attribute doesn't correspond to the chosen attribute in AAM (<https://github.com/opencv/cvat/pull/1445>)
+- Inconvinient image shaking while drawing a polygon (hold Alt key during drawing/editing/grouping to drag an image) (<https://github.com/opencv/cvat/pull/1445>)
+- Filter property "shape" doesn't work and extra operator in description (<https://github.com/opencv/cvat/pull/1445>)
+- Block of text information doesn't disappear after deactivating for locked shapes (<https://github.com/opencv/cvat/pull/1445>)
+- Annotation uploading fails in annotation view (<https://github.com/opencv/cvat/pull/1445>)
+- UI freezes after canceling pasting with escape (<https://github.com/opencv/cvat/pull/1445>)
+- Duplicating keypoints in COCO export (https://github.com/opencv/cvat/pull/1435)
 
 ### Security
 -
 
-## [0.5.0] - 2019-10-12
+## [1.0.0-beta.1] - 2020-04-15
+### Added
+- Special behaviour for attribute value ``__undefined__`` (invisibility, no shortcuts to be set in AAM)
+- Dialog window with some helpful information about using filters
+- Ability to display a bitmap in the new UI
+- Button to reset colors settings (brightness, saturation, contrast) in the new UI
+- Option to display shape text always
+- Dedicated message with clarifications when share is unmounted (https://github.com/opencv/cvat/pull/1373)
+- Ability to create one tracked point (https://github.com/opencv/cvat/pull/1383)
+- Ability to draw/edit polygons and polylines with automatic bordering feature (https://github.com/opencv/cvat/pull/1394)
+- Tutorial: instructions for CVAT over HTTPS
+- Deep extreme cut (semi-automatic segmentation) to the new UI (https://github.com/opencv/cvat/pull/1398)
+
+### Changed
+- Increase preview size of a task till 256, 256 on the server
+- Public ssh-keys are displayed in a dedicated window instead of console when create a task with a repository
+- React UI is the primary UI
+
+### Fixed
+- New shape is added when press ``esc`` when drawing instead of cancellation
+- Dextr segmentation doesn't work.
+- `FileNotFoundError` during dump after moving format files
+- CVAT doesn't append outside shapes when merge polyshapes in old UI
+- Layout sometimes shows double scroll bars on create task, dashboard and settings pages
+- UI fails after trying to change frame during resizing, dragging, editing
+- Hidden points (or outsided) are visible after changing a frame
+- Merge is allowed for points, but clicks on points conflict with frame dragging logic
+- Removed objects are visible for search
+- Add missed task_id and job_id fields into exception logs for the new UI (https://github.com/opencv/cvat/pull/1372)
+- UI fails when annotations saving occurs during drag/resize/edit (https://github.com/opencv/cvat/pull/1383)
+- Multiple savings when hold Ctrl+S (a lot of the same copies of events were sent with the same working time) (https://github.com/opencv/cvat/pull/1383)
+- UI doesn't have any reaction when git repos synchronization failed (https://github.com/opencv/cvat/pull/1383)
+- Bug when annotations cannot be saved after (delete - save - undo - save) (https://github.com/opencv/cvat/pull/1383)
+- VOC format exports Upper case labels correctly in lower case (https://github.com/opencv/cvat/pull/1379)
+- Fixed polygon exporting bug in COCO dataset (https://github.com/opencv/cvat/issues/1387)
+- Task creation from remote files (https://github.com/opencv/cvat/pull/1392)
+- Job cannot be opened in some cases when the previous job was failed during opening (https://github.com/opencv/cvat/issues/1403)
+- Deactivated shape is still highlighted on the canvas (https://github.com/opencv/cvat/issues/1403)
+- AttributeError: 'tuple' object has no attribute 'read' in ReID algorithm (https://github.com/opencv/cvat/issues/1403)
+- Wrong semi-automatic segmentation near edges of an image (https://github.com/opencv/cvat/issues/1403)
+- Git repos paths (https://github.com/opencv/cvat/pull/1400)
+
+## [1.0.0-alpha] - 2020-03-31
+### Added
+- Data streaming using chunks (https://github.com/opencv/cvat/pull/1007)
+- New UI: showing file names in UI (https://github.com/opencv/cvat/pull/1311)
+- New UI: delete a point from context menu (https://github.com/opencv/cvat/pull/1292)
+
+### Fixed
+- Git app cannot clone a repository (https://github.com/opencv/cvat/pull/1330)
+- New UI: preview position in task details (https://github.com/opencv/cvat/pull/1312)
+- AWS deployment (https://github.com/opencv/cvat/pull/1316)
+
+## [0.6.1] - 2020-03-21
+### Changed
+- VOC task export now does not use official label map by default, but takes one
+  from the source task to avoid primary-class and class part name
+  clashing ([#1275](https://github.com/opencv/cvat/issues/1275))
+
+### Fixed
+- File names in LabelMe format export are no longer truncated ([#1259](https://github.com/opencv/cvat/issues/1259))
+- `occluded` and `z_order` annotation attributes are now correctly passed to Datumaro ([#1271](https://github.com/opencv/cvat/pull/1271))
+- Annotation-less tasks now can be exported as empty datasets in COCO ([#1277](https://github.com/opencv/cvat/issues/1277))
+- Frame name matching for video annotations import -
+  allowed `frame_XXXXXX[.ext]` format ([#1274](https://github.com/opencv/cvat/pull/1274))
+
+### Security
+- Bump acorn from 6.3.0 to 6.4.1 in /cvat-ui ([#1270](https://github.com/opencv/cvat/pull/1270))
+
+## [0.6.0] - 2020-03-15
+### Added
+- Server only support for projects. Extend REST API v1 (/api/v1/projects*)
+- Ability to get basic information about users without admin permissions ([#750](https://github.com/opencv/cvat/issues/750))
+- Changed REST API: removed PUT and added DELETE methods for /api/v1/users/ID
+- Mask-RCNN Auto Annotation Script in OpenVINO format
+- Yolo Auto Annotation Script
+- Auto segmentation using Mask_RCNN component (Keras+Tensorflow Mask R-CNN Segmentation)
+- REST API to export an annotation task (images + annotations)
+- [Datumaro](https://github.com/opencv/cvat/tree/develop/datumaro) - a framework to build, analyze, debug and visualize datasets
+- Text Detection Auto Annotation Script in OpenVINO format for version 4
+- Added in OpenVINO Semantic Segmentation for roads
+- Ability to visualize labels when using Auto Annotation runner
+- MOT CSV format support ([#830](https://github.com/opencv/cvat/pull/830))
+- LabelMe format support ([#844](https://github.com/opencv/cvat/pull/844))
+- Segmentation MASK format import (as polygons) ([#1163](https://github.com/opencv/cvat/pull/1163))
+- Git repositories can be specified with IPv4 address ([#827](https://github.com/opencv/cvat/pull/827))
+
+### Changed
+- page_size parameter for all REST API methods
+- React & Redux & Antd based dashboard
+- Yolov3 interpretation script fix and changes to mapping.json
+- YOLO format support ([#1151](https://github.com/opencv/cvat/pull/1151))
+- Added support for OpenVINO 2020
+
+### Fixed
+- Exception in Git plugin [#826](https://github.com/opencv/cvat/issues/826)
+- Label ids in TFrecord format now start from 1 [#866](https://github.com/opencv/cvat/issues/866)
+- Mask problem in COCO JSON style [#718](https://github.com/opencv/cvat/issues/718)
+- Datasets (or tasks) can be joined and split to subsets with Datumaro [#791](https://github.com/opencv/cvat/issues/791)
+- Output labels for VOC format can be specified with Datumaro [#942](https://github.com/opencv/cvat/issues/942)
+- Annotations can be filtered before dumping with Datumaro [#994](https://github.com/opencv/cvat/issues/994)
+
+## [0.5.2] - 2019-12-15
+### Fixed
+- Frozen version of scikit-image==0.15 in requirements.txt because next releases don't support Python 3.5
+
+## [0.5.1] - 2019-10-17
+### Added
+- Integration with Zenodo.org (DOI)
+
+## [0.5.0] - 2019-09-12
 ### Added
 - A converter to YOLO format
 - Installation guide

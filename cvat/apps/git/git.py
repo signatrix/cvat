@@ -1,4 +1,4 @@
-# Copyright (C) 2018 Intel Corporation
+# Copyright (C) 2018-2020 Intel Corporation
 #
 # SPDX-License-Identifier: MIT
 
@@ -52,20 +52,20 @@ def _read_old_diffs(diff_dir, summary):
 
 
 class Git:
-    def __init__(self, db_git, tid, user):
+    def __init__(self, db_git, db_task, user):
         self._db_git = db_git
         self._url = db_git.url
         self._path = db_git.path
-        self._tid = tid
+        self._tid = db_task.id
         self._user = {
             "name": user.username,
             "email": user.email or "dummy@cvat.com"
         }
-        self._cwd = os.path.join(os.getcwd(), "data", str(tid), "repos")
-        self._diffs_dir = os.path.join(os.getcwd(), "data", str(tid), "repos_diffs_v2")
-        self._task_mode = Task.objects.get(pk = tid).mode
-        self._task_name = re.sub(r'[\\/*?:"<>|\s]', '_', Task.objects.get(pk = tid).name)[:100]
-        self._branch_name = 'cvat_{}_{}'.format(tid, self._task_name)
+        self._cwd = os.path.join(db_task.get_task_artifacts_dirname(), "repos")
+        self._diffs_dir = os.path.join(db_task.get_task_artifacts_dirname(), "repos_diffs_v2")
+        self._task_mode = db_task.mode
+        self._task_name = re.sub(r'[\\/*?:"<>|\s]', '_', db_task.name)[:100]
+        self._branch_name = 'cvat_{}_{}'.format(db_task.id, self._task_name)
         self._annotation_file = os.path.join(self._cwd, self._path)
         self._sync_date = db_git.sync_date
         self._lfs = db_git.lfs
@@ -76,8 +76,13 @@ class Git:
     # HTTP/HTTPS: [http://]github.com/proj/repos[.git]
     def _parse_url(self):
         try:
-            http_pattern = "([https|http]+)*[://]*([a-zA-Z0-9._-]+.[a-zA-Z]+)/([a-zA-Z0-9._-]+)/([a-zA-Z0-9._-]+)"
-            ssh_pattern = "([a-zA-Z0-9._-]+)@([a-zA-Z0-9._-]+):([a-zA-Z0-9._-]+)/([a-zA-Z0-9._-]+)"
+            # Almost STD66 (RFC3986), but schema can include a leading digit
+            # Reference on URL formats accepted by Git:
+            # https://github.com/git/git/blob/77bd3ea9f54f1584147b594abc04c26ca516d987/url.c
+
+            host_pattern = r"((?:(?:(?:\d{1,3}\.){3}\d{1,3})|(?:[a-zA-Z0-9._-]+.[a-zA-Z]+))(?::\d+)?)"
+            http_pattern = r"(?:http[s]?://)?" + host_pattern + r"((?:/[a-zA-Z0-9._-]+){2})"
+            ssh_pattern = r"([a-zA-Z0-9._-]+)@" + host_pattern + r":([a-zA-Z0-9._-]+)/([a-zA-Z0-9._-]+)"
 
             http_match = re.match(http_pattern, self._url)
             ssh_match = re.match(ssh_pattern, self._url)
@@ -87,21 +92,21 @@ class Git:
             repos = None
 
             if http_match:
-                host = http_match.group(2)
-                repos = "{}/{}".format(http_match.group(3), http_match.group(4))
+                host = http_match.group(1)
+                repos = http_match.group(2)[1:]
             elif ssh_match:
                 user = ssh_match.group(1)
                 host = ssh_match.group(2)
                 repos = "{}/{}".format(ssh_match.group(3), ssh_match.group(4))
             else:
-                raise Exception("Got URL doesn't sutisfy for regular expression")
+                raise Exception("Git repository URL does not satisfy pattern")
 
             if not repos.endswith(".git"):
                 repos += ".git"
 
             return user, host, repos
         except Exception as ex:
-            slogger.glob.exception('URL parsing errors occured', exc_info = True)
+            slogger.glob.exception('URL parsing errors occurred', exc_info = True)
             raise ex
 
 
@@ -266,7 +271,7 @@ class Git:
         display_name += " for images" if self._task_mode == "annotation" else " for videos"
         cvat_dumper = AnnotationDumper.objects.get(display_name=display_name)
         dump_name = os.path.join(db_task.get_task_dirname(),
-            "git_annotation_{}.".format(timestamp) + "dump")
+            "git_annotation_{}.xml".format(timestamp))
         dump_task_data(
             pk=self._tid,
             user=user,
@@ -278,7 +283,7 @@ class Git:
 
         ext = os.path.splitext(self._path)[1]
         if ext == '.zip':
-            subprocess.call('zip -j -r "{}" "{}"'.format(self._annotation_file, dump_name), shell=True)
+            subprocess.run(args=['7z', 'a', self._annotation_file, dump_name])
         elif ext == '.xml':
             shutil.copyfile(dump_name, self._annotation_file)
         else:
@@ -372,7 +377,7 @@ def initial_create(tid, git_path, lfs, user):
         db_git.lfs = lfs
 
         try:
-            _git = Git(db_git, tid, db_task.owner)
+            _git = Git(db_git, db_task, db_task.owner)
             _git.init_repos()
             db_git.save()
         except git.exc.GitCommandError as ex:
@@ -388,7 +393,7 @@ def push(tid, user, scheme, host):
         db_task = Task.objects.get(pk = tid)
         db_git = GitData.objects.select_for_update().get(pk = db_task)
         try:
-            _git = Git(db_git, tid, user)
+            _git = Git(db_git, db_task, user)
             _git.init_repos()
             _git.push(user, scheme, host, db_task, db_task.updated_date)
 
@@ -422,17 +427,18 @@ def get(tid, user):
                 response['status']['value'] = str(db_git.status)
             else:
                 try:
-                    _git = Git(db_git, tid, user)
+                    _git = Git(db_git, db_task, user)
                     _git.init_repos(True)
                     db_git.status = _git.remote_status(db_task.updated_date)
                     response['status']['value'] = str(db_git.status)
                 except git.exc.GitCommandError as ex:
                     _have_no_access_exception(ex)
+            db_git.save()
         except Exception as ex:
             db_git.status = GitStatusChoice.NON_SYNCED
+            db_git.save()
             response['status']['error'] = str(ex)
 
-    db_git.save()
     return response
 
 def update_states():
@@ -453,8 +459,8 @@ def _onsave(jid, user, data, action):
     db_task = Job.objects.select_related('segment__task').get(pk = jid).segment.task
     try:
         db_git = GitData.objects.select_for_update().get(pk = db_task.id)
-        diff_dir = os.path.join(os.getcwd(), "data", str(db_task.id), "repos_diffs")
-        diff_dir_v2 = os.path.join(os.getcwd(), "data", str(db_task.id), "repos_diffs_v2")
+        diff_dir = os.path.join(db_task.get_task_artifacts_dirname(), "repos_diffs")
+        diff_dir_v2 = os.path.join(db_task.get_task_artifacts_dirname(), "repos_diffs_v2")
 
         summary = {
             "update": 0,
