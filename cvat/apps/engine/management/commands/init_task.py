@@ -91,6 +91,23 @@ class Command(BaseCommand):
                                        "values": ["false"]
                                    },
                                ]},  # 'hand ~radio=type:none,empty,juice,cacao,pasta,chips',
+                      'head': {"name": "head",
+                                 "attributes": [
+                                     {
+                                         "name": "facemask",
+                                         "mutable": True,
+                                         "input_type": "checkbox",
+                                         "default_value": "false",
+                                         "values": ["false"]
+                                     },
+                                     {
+                                         "name": "back_head",
+                                         "mutable": True,
+                                         "input_type": "checkbox",
+                                         "default_value": "false",
+                                         "values": ["false"]
+                                     },
+                                 ]},  # 'head ~checkbox=facemask:false' ~back_head=facemask:false'
                       'juice': {"name": "juice",
                                 "attributes": [
                                     {
