@@ -74,6 +74,23 @@ class Command(BaseCommand):
                                          "values": ["false"]
                                      },
                                  ]},  # 'person ~checkbox=difficult:false',
+                      'head': {"name": "head",
+                                 "attributes": [
+                                     {
+                                         "name": "facemask",
+                                         "mutable": True,
+                                         "input_type": "checkbox",
+                                         "default_value": "false",
+                                         "values": ["false"]
+                                     },
+                                     {
+                                         "name": "back_head",
+                                         "mutable": True,
+                                         "input_type": "checkbox",
+                                         "default_value": "false",
+                                         "values": ["false"]
+                                     },
+                                 ]},  # 'head ~checkbox=facemask:false' ~back_head=facemask:false'
                       'hand': {"name": "hand",
                                "attributes": [
                                    {
