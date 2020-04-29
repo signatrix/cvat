@@ -5,8 +5,7 @@ server {
 }
 
 server {
-    listen       80;
-    server_name  ${CVAT_HOST};
+    listen       80 default_server;
 
     location ~* /api/.*|git/.*|tensorflow/.*|auto_annotation/.*|analytics/.*|static/.*|admin|admin/.*|documentation/.*|dextr/.*|reid/.*  {
         proxy_pass              http://cvat:8080;
