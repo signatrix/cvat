@@ -18,7 +18,7 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--tid', nargs='+', type=int)
         parser.add_argument('--dump_folder', type=str,
-                            default="/home/django/share/annotation_tesco")
+                            default="/home/django/share/out")
         parser.add_argument('--user', type=str, default="bot")
         parser.add_argument('--delete', '-d', action='store_true',
                             help='Delete the task afterwards')
@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
 def dump_annotation_for_task(task, dump_folder, overwrite=False):
     output_path = os.path.join(dump_folder, task.name.replace('/', '_') + ".xml")
-    print(output_path.replace("/home/django/share/", "/mnt/data/raw_video/"))
+    print(output_path.replace("/home/django/share/", "/mnt/data/cvat_share/"))
     display_name = "CVAT XML 1.1 for videos"
     cvat_dumper = AnnotationDumper.objects.get(display_name=display_name)
     annotation.dump_task_data(task.id, user, output_path, cvat_dumper, 'http', 'localhost:8080')
