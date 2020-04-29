@@ -10,9 +10,9 @@ from cvat.apps.engine.annotation import delete_task_data
 from .export_annotation import dump_annotation_for_task
 
 
-# python3 manage.py export_completed_annotations --dump_folder=/home/django/share/exported_annotations/
+# python3 manage.py export_completed_annotations --dump_folder=/home/django/share/out/
 class Command(BaseCommand):
-    help = 'Exports completed annotations and deletes the imported tasks if the user wants\nUse:\n./exec_manage export_completed_annotations --dump_folder=/home/django/share/exported_annotations/'
+    help = 'Exports completed annotations and deletes the imported tasks if the user wants\nUse:\n./exec_manage export_completed_annotations --dump_folder=/home/django/share/out/'
 
     def add_arguments(self, parser):
         parser.add_argument('--dump_folder', type=str, default='')
@@ -25,7 +25,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         if not options['dump_folder']:
-            options['dump_folder'] = os.path.join("/home/django/share/exported_annotations/", datetime.now().strftime("%Y_%m_%d"))
+            options['dump_folder'] = os.path.join("/home/django/share/out/", datetime.now().strftime("%Y_%m_%d"))
         if not os.path.exists(options['dump_folder']):
             os.makedirs(options['dump_folder'])
         verbose = options['verbose']

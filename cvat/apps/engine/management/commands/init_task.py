@@ -17,19 +17,23 @@ global_logger = logging.getLogger(__name__)
 # ./exec_manage init_video_task --video_path "tesco/tesco02/cam0/2019-01-28_11:44:05.mp4" --task_name "tesco/tesco02/cam0/2019-01-28_11:44:05" --xml_path "/home/django/share/out_bak/tesco/tesco02_cam0_2019-01-28_11_44_05.xml" --wait
 
 
+
 # for i in {60..69}
 # do
-# . / exec_manage init_video_task - -video_path "red_exports/edeka_entrance/dataset_0000$i/edeka_entrance_0000$i.mp4" - -task_name "edeka_entrance_0000$i" - -labels cart
+# . / exec_manage init_task --video_path "in/edeka_entrance/dataset_0000$i/video.mp4" --task_name "edeka_entrance_0000$i" --labels cart
 # done
 
-# ./exec_manage init_task --video_path "red_exports/globus_se/dataset_000549/globus_se_000549_test.mp4" --labels cart person
+
+# ./exec_manage init_task --video_path "in/tesco/tesco02/cam0/2019-01-28_11:44:05.mp4" --task_name "in/tesco/tesco02/cam0/2019-01-28_11:44:05" --xml_path "in/tesco/tesco02_cam0_2019-01-28_11_44_05.xml" --wait
+
+# ./exec_manage init_task --video_path "in/globus_se/dataset_000549/video.mp4" --labels cart person
 
 base_url = "http://localhost:8080/"
 user, password = "cvat", "cvat1234"
 
 
 class Command(BaseCommand):
-    help = 'Creates a task given a video\nExample use: \n./exec_manage init_task --video_path "aero/aero_office/dataset_000002/aero_office_000002.mp4" --labels hand juice cacao pasta chips'
+    help = 'Creates a task given a video\nExample use: \n./exec_manage init_task --video_path "in/edeka_entrance/dataset_000002/video.mp4" --labels cart'
 
     def add_arguments(self, parser):
         parser.add_argument('--video_path', type=str, required=True)
