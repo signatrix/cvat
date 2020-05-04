@@ -14,9 +14,15 @@ import {
     repeatDrawShapeAsync,
     pasteShapeAsync,
     resetAnnotationsGroup,
+
+    groupAnnotationsAsync,
+    createAnnotationsAsync,
+    saveAnnotationsAsync,
 } from 'actions/annotation-actions';
 import ControlsSideBarComponent from 'components/annotation-page/standard-workspace/controls-side-bar/controls-side-bar';
 import { ActiveControl, CombinedState, Rotation } from 'reducers/interfaces';
+import { AnyAction } from 'redux';
+import { ThunkDispatch } from 'redux-thunk';
 
 interface StateToProps {
     canvasInstance: Canvas;
@@ -24,6 +30,9 @@ interface StateToProps {
     activeControl: ActiveControl;
     keyMap: Record<string, ExtendedKeyMapOptions>;
     normalizedKeyMap: Record<string, string>;
+
+    jobInstance: any,
+    frame: number,
 }
 
 interface DispatchToProps {
@@ -34,6 +43,10 @@ interface DispatchToProps {
     resetGroup(): void;
     repeatDrawShape(): void;
     pasteShape(): void;
+
+    onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
+    onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
+    onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
 }
 
 function mapStateToProps(state: CombinedState): StateToProps {
@@ -42,6 +55,14 @@ function mapStateToProps(state: CombinedState): StateToProps {
             canvas: {
                 instance: canvasInstance,
                 activeControl,
+            },
+            job: {
+                instance: jobInstance,
+            },
+            player: {
+                frame: {
+                    number: frame,
+                },
             },
         },
         settings: {
@@ -61,10 +82,13 @@ function mapStateToProps(state: CombinedState): StateToProps {
         activeControl,
         normalizedKeyMap,
         keyMap,
+
+        jobInstance,
+        frame,
     };
 }
 
-function dispatchToProps(dispatch: any): DispatchToProps {
+function dispatchToProps(dispatch: ThunkDispatch<{}, {}, AnyAction>): DispatchToProps {
     return {
         mergeObjects(enabled: boolean): void {
             dispatch(mergeObjects(enabled));
@@ -86,6 +110,20 @@ function dispatchToProps(dispatch: any): DispatchToProps {
         },
         resetGroup(): void {
             dispatch(resetAnnotationsGroup());
+        },
+        onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void> {
+            return dispatch(createAnnotationsAsync(sessionInstance, frame, states));
+        },
+        onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void> {
+            return dispatch(groupAnnotationsAsync(sessionInstance, frame, states));
+        },
+        onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void> {
+            return dispatch(createAnnotationsAsync(sessionInstance, frame, states))
+                .then(() => dispatch(groupObjects(true)))
+                .then(() => dispatch(groupAnnotationsAsync(sessionInstance, frame, states)))
+                .then(() => dispatch(groupObjects(false)))
+                .then(() => {});
+
         },
     };
 }

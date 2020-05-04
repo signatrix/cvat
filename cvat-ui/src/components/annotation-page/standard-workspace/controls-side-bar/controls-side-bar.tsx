@@ -23,12 +23,15 @@ import SetupTagControl from './setup-tag-control';
 import MergeControl from './merge-control';
 import GroupControl from './group-control';
 import SplitControl from './split-control';
+import TemplateControl from './template-control';
 
 interface Props {
     canvasInstance: Canvas;
     activeControl: ActiveControl;
     keyMap: Record<string, ExtendedKeyMapOptions>;
     normalizedKeyMap: Record<string, string>;
+    jobInstance: any,
+    frame: number,
 
     mergeObjects(enabled: boolean): void;
     groupObjects(enabled: boolean): void;
@@ -37,6 +40,9 @@ interface Props {
     repeatDrawShape(): void;
     pasteShape(): void;
     resetGroup(): void;
+    onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
+    onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
+    onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
 }
 
 export default function ControlsSideBarComponent(props: Props): JSX.Element {
@@ -53,6 +59,12 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         resetGroup,
         normalizedKeyMap,
         keyMap,
+
+        jobInstance,
+        frame,
+        onCreateAnnotations,
+        onGroupAnnotations,
+        onCreateAnnotationsAndGrouping,
     } = props;
 
     const preventDefault = (event: KeyboardEvent | undefined): void => {
@@ -183,6 +195,16 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
                 canvasInstance={canvasInstance}
                 isDrawing={activeControl === ActiveControl.DRAW_CUBOID}
             />
+            <TemplateControl
+                canvasInstance={canvasInstance}
+                isDrawing={activeControl === ActiveControl.DRAW_TEMPLATE}
+                jobInstance={jobInstance}
+                frame={frame}
+                onCreateAnnotations={onCreateAnnotations}
+                onGroupAnnotations={onGroupAnnotations}
+                onCreateAnnotationsAndGrouping={onCreateAnnotationsAndGrouping}
+            />
+
             <SetupTagControl
                 canvasInstance={canvasInstance}
                 isDrawing={false}
