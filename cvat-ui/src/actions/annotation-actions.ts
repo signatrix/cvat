@@ -1259,6 +1259,37 @@ export function groupAnnotationsAsync(
     };
 }
 
+
+export function createAnnotationsAndGroupAsync(sessionInstance: any, frame: number, statesToCreate: any[]):
+ThunkAction<Promise<void>, {}, {}, AnyAction> {
+    return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
+        try {
+            const { filters, showAllInterpolationTracks } = receiveAnnotationsParameters();
+            await sessionInstance.annotations.put(statesToCreate);
+            const states = await sessionInstance.annotations
+                .get(frame, showAllInterpolationTracks, filters);
+            const history = await sessionInstance.actions.get();
+
+            dispatch({
+                type: AnnotationActionTypes.CREATE_ANNOTATIONS_SUCCESS,
+                payload: {
+                    states,
+                    history,
+                },
+            });
+
+            dispatch(groupAnnotationsAsync(sessionInstance, frame, states));
+        } catch (error) {
+            dispatch({
+                type: AnnotationActionTypes.CREATE_ANNOTATIONS_FAILED,
+                payload: {
+                    error,
+                },
+            });
+        }
+    };
+}
+
 export function splitAnnotationsAsync(sessionInstance: any, frame: number, stateToSplit: any):
 ThunkAction<Promise<void>, {}, {}, AnyAction> {
     return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {

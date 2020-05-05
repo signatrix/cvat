@@ -18,6 +18,7 @@ import {
     groupAnnotationsAsync,
     createAnnotationsAsync,
     saveAnnotationsAsync,
+    createAnnotationsAndGroupAsync,
 } from 'actions/annotation-actions';
 import ControlsSideBarComponent from 'components/annotation-page/standard-workspace/controls-side-bar/controls-side-bar';
 import { ActiveControl, CombinedState, Rotation } from 'reducers/interfaces';
@@ -118,12 +119,7 @@ function dispatchToProps(dispatch: ThunkDispatch<{}, {}, AnyAction>): DispatchTo
             return dispatch(groupAnnotationsAsync(sessionInstance, frame, states));
         },
         onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void> {
-            return dispatch(createAnnotationsAsync(sessionInstance, frame, states))
-                .then(() => dispatch(groupObjects(true)))
-                .then(() => dispatch(groupAnnotationsAsync(sessionInstance, frame, states)))
-                .then(() => dispatch(groupObjects(false)))
-                .then(() => {});
-
+            return dispatch(createAnnotationsAndGroupAsync(sessionInstance, frame, states));
         },
     };
 }
