@@ -12,39 +12,40 @@ export interface TemplateControlProps {
     jobInstance: any;
     frame: number;
 
-    onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
+    onCreateAnnotationsAndGrouping(
+        sessionInstance: any,
+        frame: number,
+        states: any[]
+    ): Promise<void>;
 }
-
 
 export const TemplateControl: FC<TemplateControlProps> = ({
     canvasInstance,
     isDrawing,
     jobInstance,
     frame,
-    onCreateAnnotationsAndGrouping,
+    onCreateAnnotationsAndGrouping
 }) => {
-
     const template: PointData[] = [
         {
             frame,
             label: { id: 1 },
             points: [302.470703125, 280.466796875],
-            zOrder: 0,
+            zOrder: 0
         },
         {
             frame,
             label: { id: 2 },
             points: [200.470703125, 280.466796875],
-            zOrder: 0,
+            zOrder: 0
         },
         {
             frame,
             label: { id: 3 },
             points: [400.470703125, 280.466796875],
-            zOrder: 0,
-        },
-    ]
-
+            zOrder: 0
+        }
+    ];
 
     const drawTemplate = () => {
         const states = template.map(createPoint);
@@ -68,17 +69,24 @@ export const TemplateControl: FC<TemplateControlProps> = ({
           }
         : {};
 
+    const popoverContent = <Button onClick={drawTemplate}>Insert</Button>;
+
     return (
         <Popover
             {...dynamicPopoverPros}
             overlayClassName="cvat-draw-shape-popover"
             placement="right"
-            content={<Button onClick={drawTemplate}>Insert</Button>}
+            content={popoverContent}
         >
-            <p style={{
-                textAlign: "center",
-                fontWeight: "bold",
-            }} {...dynamicIconProps}>T</p>
+            <p
+                style={{
+                    textAlign: "center",
+                    fontWeight: "bold"
+                }}
+                {...dynamicIconProps}
+            >
+                T
+            </p>
         </Popover>
     );
 };
@@ -99,10 +107,7 @@ interface PointData {
 
 const createLabel = (args: LabelData) => new cvat.classes.Label(args);
 
-const createPoint = ({
-    label,
-    ...other
-}: PointData) =>
+const createPoint = ({ label, ...other }: PointData) =>
     new cvat.classes.ObjectState({
         label: createLabel(label),
         occluded: false,
