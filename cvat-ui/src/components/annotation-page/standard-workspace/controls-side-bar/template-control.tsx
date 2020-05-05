@@ -79,7 +79,10 @@ export const TemplateControl: FC<TemplateControlProps> = ({
             placement="right"
             content={<Button onClick={drawTemplate}>Insert</Button>}
         >
-            <p {...dynamicIconProps}>Template</p>
+            <p style={{
+                textAlign: "center",
+                fontWeight: "bold",
+            }} {...dynamicIconProps}>T</p>
         </Popover>
     );
 };
