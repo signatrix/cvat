@@ -1265,10 +1265,13 @@ ThunkAction<Promise<void>, {}, {}, AnyAction> {
     return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
         try {
             const { filters, showAllInterpolationTracks } = receiveAnnotationsParameters();
-            await sessionInstance.annotations.put(statesToCreate);
+            const idsToGroup = await sessionInstance.annotations.put(statesToCreate);
             const states = await sessionInstance.annotations
                 .get(frame, showAllInterpolationTracks, filters);
+            const allStates = await sessionInstance.annotations.get(frame);
             const history = await sessionInstance.actions.get();
+
+            const statesToGroup = allStates.filter((state: any) => idsToGroup.includes(state.clientID));
 
             dispatch({
                 type: AnnotationActionTypes.CREATE_ANNOTATIONS_SUCCESS,
@@ -1278,7 +1281,7 @@ ThunkAction<Promise<void>, {}, {}, AnyAction> {
                 },
             });
 
-            dispatch(groupAnnotationsAsync(sessionInstance, frame, states));
+            dispatch(groupAnnotationsAsync(sessionInstance, frame, statesToGroup));
         } catch (error) {
             dispatch({
                 type: AnnotationActionTypes.CREATE_ANNOTATIONS_FAILED,
