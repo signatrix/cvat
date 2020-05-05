@@ -12,8 +12,6 @@ export interface TemplateControlProps {
     jobInstance: any;
     frame: number;
 
-    onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
-    onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
 }
 
@@ -23,8 +21,6 @@ export const TemplateControl: FC<TemplateControlProps> = ({
     isDrawing,
     jobInstance,
     frame,
-    onCreateAnnotations,
-    onGroupAnnotations,
     onCreateAnnotationsAndGrouping,
 }) => {
 
