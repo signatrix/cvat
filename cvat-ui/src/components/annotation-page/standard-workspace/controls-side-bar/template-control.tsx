@@ -1,8 +1,9 @@
-import Button from "antd/lib/button";
-import Popover from "antd/lib/popover";
-import { Canvas } from "cvat-canvas-wrapper";
-import getCore from "cvat-core-wrapper";
-import React, { FC } from "react";
+import { Button, Col, List, Row, Select } from 'antd';
+import Popover from 'antd/lib/popover';
+import Text from 'antd/lib/typography/Text';
+import { Canvas } from 'cvat-canvas-wrapper';
+import getCore from 'cvat-core-wrapper';
+import React, { FC, useCallback, useEffect, useState } from 'react';
 
 const cvat = getCore();
 
@@ -11,6 +12,7 @@ export interface TemplateControlProps {
     isDrawing: boolean;
     jobInstance: any;
     frame: number;
+    labels: any[];
 
     onCreateAnnotationsAndGrouping(
         sessionInstance: any,
@@ -24,31 +26,56 @@ export const TemplateControl: FC<TemplateControlProps> = ({
     isDrawing,
     jobInstance,
     frame,
+    labels,
     onCreateAnnotationsAndGrouping
 }) => {
-    const template: PointData[] = [
+    const template: VertexTemplate[] = [
         {
-            frame,
-            label: { id: 1 },
-            points: [302.470703125, 280.466796875],
-            zOrder: 0
+            location: [302.470703125, 280.466796875],
+            nameHint: "Head"
         },
         {
-            frame,
-            label: { id: 2 },
-            points: [200.470703125, 280.466796875],
-            zOrder: 0
+            location: [200.470703125, 280.466796875],
+            nameHint: "LHand"
         },
         {
-            frame,
-            label: { id: 3 },
-            points: [400.470703125, 280.466796875],
-            zOrder: 0
+            location: [400.470703125, 280.466796875],
+            nameHint: "RHand"
         }
     ];
 
+    const [points, setPoints] = useState<(PointData & { id: number })[]>([]);
+
+    useEffect(() => {
+        setPoints(
+            template.map(({ location, nameHint }, idx) => ({
+                points: location,
+                frame,
+                zOrder: 0,
+                label: labels[0] || { id: 1 },
+                nameHint,
+                id: idx
+            }))
+        );
+    }, []);
+
+    const handleChangeLabel = useCallback(
+        (pointId: number) => (labelId: number) =>
+            setPoints(
+                points.map(point =>
+                    point.id === pointId
+                        ? {
+                              ...point,
+                              label: { id: labelId }
+                          }
+                        : point
+                )
+            ),
+        [points]
+    );
+
     const drawTemplate = () => {
-        const states = template.map(createPoint);
+        const states = points.map(createPoint);
         onCreateAnnotationsAndGrouping(jobInstance, frame, states);
     };
 
@@ -69,7 +96,55 @@ export const TemplateControl: FC<TemplateControlProps> = ({
           }
         : {};
 
-    const popoverContent = <Button onClick={drawTemplate}>Insert</Button>;
+    const popoverContent = (
+        <div
+            style={{
+                padding: "10px"
+            }}
+        >
+            <Row>
+                <Col span={24}>
+                    <Text strong>Draw template</Text>
+                </Col>
+            </Row>
+            <Row>
+                <Col span={24}>
+                    <List
+                        dataSource={points}
+                        renderItem={item => (
+                            <List.Item
+                                key={item.id}
+                                actions={[
+                                    <Select
+                                        value={item.label.id}
+                                        onChange={handleChangeLabel(item.id)}
+                                    >
+                                        {labels.map((label: any) => (
+                                            <Select.Option
+                                                key={label.id}
+                                                value={label.id}
+                                            >
+                                                {label.name}
+                                            </Select.Option>
+                                        ))}
+                                    </Select>
+                                ]}
+                            >
+                                <List.Item.Meta
+                                    title={item.nameHint}
+                                />
+                            </List.Item>
+                        )}
+                    />
+                </Col>
+            </Row>
+            <Row>
+                <Col offset={12} span={12}>
+                    <Button onClick={drawTemplate}>Insert</Button>
+                </Col>
+            </Row>
+        </div>
+    );
 
     return (
         <Popover
@@ -103,6 +178,17 @@ interface PointData {
     label: LabelData;
     zOrder: number;
     frame: number;
+    nameHint: string | undefined;
+}
+
+interface VertexTemplate {
+    location: [number, number];
+    nameHint: string | undefined;
+}
+
+interface EdgeTemplate {
+    from: number;
+    to: number;
 }
 
 const createLabel = (args: LabelData) => new cvat.classes.Label(args);

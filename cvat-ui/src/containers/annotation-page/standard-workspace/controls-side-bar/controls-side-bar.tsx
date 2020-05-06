@@ -31,6 +31,7 @@ interface StateToProps {
     activeControl: ActiveControl;
     keyMap: Record<string, ExtendedKeyMapOptions>;
     normalizedKeyMap: Record<string, string>;
+    labels: any[];
 
     jobInstance: any,
     frame: number,
@@ -59,6 +60,7 @@ function mapStateToProps(state: CombinedState): StateToProps {
             },
             job: {
                 instance: jobInstance,
+                labels,
             },
             player: {
                 frame: {
@@ -83,6 +85,7 @@ function mapStateToProps(state: CombinedState): StateToProps {
         activeControl,
         normalizedKeyMap,
         keyMap,
+        labels,
 
         jobInstance,
         frame,

@@ -32,6 +32,7 @@ interface Props {
     normalizedKeyMap: Record<string, string>;
     jobInstance: any,
     frame: number,
+    labels: any[],
 
     mergeObjects(enabled: boolean): void;
     groupObjects(enabled: boolean): void;
@@ -61,6 +62,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         keyMap,
 
         jobInstance,
+        labels,
         frame,
         onCreateAnnotations,
         onGroupAnnotations,
@@ -200,8 +202,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
                 isDrawing={activeControl === ActiveControl.DRAW_TEMPLATE}
                 jobInstance={jobInstance}
                 frame={frame}
-                onCreateAnnotations={onCreateAnnotations}
-                onGroupAnnotations={onGroupAnnotations}
+                labels={labels}
                 onCreateAnnotationsAndGrouping={onCreateAnnotationsAndGrouping}
             />
 
