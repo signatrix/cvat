@@ -680,12 +680,26 @@ export class DrawHandlerImpl implements DrawHandler {
                 this.drawPoints();
             } else if (this.drawData.shapeType === 'cuboid') {
                 this.drawCuboid();
+            } else if (this.drawData.shapeType === 'template') {
+                this.drawTemplate();
             }
             this.setupDrawEvents();
         }
 
         this.startTimestamp = Date.now();
         this.initialized = true;
+    }
+
+    public drawTemplate() {
+        const { shapeType } = this.drawData;
+
+        console.log(this.drawData);
+        console.log('>>> drawing template');
+
+        this.onDrawDone({
+            shapeType,
+            points: [],
+        }, Date.now() - this.startTimestamp);
     }
 
     public constructor(
