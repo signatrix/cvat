@@ -277,6 +277,7 @@ export enum ShapeType {
     POLYLINE = 'polyline',
     POINTS = 'points',
     CUBOID = 'cuboid',
+    TEMPLATE = 'template',
 }
 
 export enum ObjectType {
