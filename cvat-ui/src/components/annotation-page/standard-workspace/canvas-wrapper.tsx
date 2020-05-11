@@ -27,6 +27,42 @@ const cvat = getCore();
 
 const MAX_DISTANCE_TO_OPEN_SHAPE = 50;
 
+interface LabelData {
+    id: number;
+    name?: string;
+    color?: string;
+    attributes?: unknown[];
+}
+
+interface PointData {
+    points: [number, number];
+    label: LabelData;
+    zOrder: number;
+    frame: number;
+    nameHint: string | undefined;
+}
+
+interface VertexTemplate {
+    location: [number, number];
+    nameHint: string | undefined;
+}
+
+interface EdgeTemplate {
+    from: number;
+    to: number;
+}
+
+const createLabel = (args: LabelData) => new cvat.classes.Label(args);
+
+const createPoint = ({ label, ...other }: PointData) =>
+    new cvat.classes.ObjectState({
+        label: createLabel(label),
+        occluded: false,
+        objectType: "track",
+        shapeType: "points",
+        ...other
+    });
+
 interface Props {
     sidebarCollapsed: boolean;
     canvasInstance: Canvas;
@@ -300,6 +336,11 @@ export default class CanvasWrapperComponent extends React.PureComponent<Props> {
             jobInstance.logger.log(LogType.drawObject, { count: 1, duration });
         } else {
             jobInstance.logger.log(LogType.pasteObject, { count: 1, duration });
+        }
+
+        if (state.shapeType === 'template') {
+            state;
+            return;
         }
 
         state.objectType = state.objectType || activeObjectType;
