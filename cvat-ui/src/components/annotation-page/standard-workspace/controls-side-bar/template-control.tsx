@@ -75,8 +75,19 @@ export const TemplateControl: FC<TemplateControlProps> = ({
     );
 
     const drawTemplate = () => {
-        const states = points.map(createPoint);
-        onCreateAnnotationsAndGrouping(jobInstance, frame, states);
+        canvasInstance.cancel();
+        canvasInstance.draw({
+            enabled: true,
+            shapeType: ShapeType.TEMPLATE,
+            template: {
+                vertices: points.map(x => x.points),
+                labels: points.map(x => x.label.id),
+                edges: [],
+            }
+        });
+
+        // const states = points.map(createPoint);
+        // onCreateAnnotationsAndGrouping(jobInstance, frame, states);
     };
 
     const dynamicPopoverPros = isDrawing
