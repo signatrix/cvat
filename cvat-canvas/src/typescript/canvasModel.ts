@@ -60,13 +60,16 @@ export interface DrawData {
     numberOfPoints?: number;
     initialState?: any;
     crosshair?: boolean;
+    template?: {
+        vertices: Point2D[];
+        labels: number[];
+        edges: Edge[];
+    }
 }
 
-export interface EditData {
-    enabled: boolean;
-    state: any;
-    pointID: number;
-}
+type Point2D = [number, number];
+
+type Edge = [number, number];
 
 export interface GroupData {
     enabled: boolean;
@@ -100,6 +103,7 @@ export enum UpdateReasons {
     FITTED_CANVAS = 'fitted_canvas',
 
     DRAW = 'draw',
+    DRAW_TEMPLATE = 'draw_template',
     MERGE = 'merge',
     SPLIT = 'split',
     GROUP = 'group',
