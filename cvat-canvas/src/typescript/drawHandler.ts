@@ -691,15 +691,71 @@ export class DrawHandlerImpl implements DrawHandler {
     }
 
     public drawTemplate() {
-        const { shapeType } = this.drawData;
+        const { shapeType, template } = this.drawData;
 
         console.log(this.drawData);
         console.log('>>> drawing template');
 
-        this.onDrawDone({
-            shapeType,
-            points: [],
-        }, Date.now() - this.startTimestamp);
+        type Point2D = [number, number];
+
+        const translate: (p: Point2D) => (x: Point2D) => Point2D = ([x0, y0]) => ([x, y]) => [x + x0, y + y0];
+        const scale: (p: Point2D) => (x: Point2D) => Point2D = ([w, h]) => ([x, y]) => [x * w, y * h];
+        const invOnInf0: (x: number) => number = x => x === 0 ? x : 1 / x;
+
+        const normalize: (p: Point2D[]) => Point2D[] = p => {
+            const [Mx, My] = p.reduce(([Mx, My], [x, y]) => [Math.max(Mx, x), Math.max(My, y)], [-Infinity, -Infinity]);
+            const [mx, my] = p.reduce(([Mx, My], [x, y]) => [Math.min(Mx, x), Math.min(My, y)], [Infinity, Infinity]);
+            const [w, h] = [Mx - my, My - my];
+            return p.map(
+                p => scale([invOnInf0(w), invOnInf0(h)])(
+                    translate([-mx, -my])(
+                        p
+                    )
+                )
+            );
+        }
+
+        const templatePoints = normalize(template.vertices);
+
+        // default box drawing
+        this.drawBox();
+        // Draw instance was initialized after drawBox();
+        this.shapeSizeElement = displayShapeSize(this.canvas, this.text);
+
+        this.drawInstance = this.canvas.rect();
+        this.drawInstance.on('drawstop', (e: Event): void => {
+            const bbox = (e.target as SVGRectElement).getBBox();
+            const [xtl, ytl, xbr, ybr] = this.getFinalRectCoordinates(bbox);
+            const { shapeType, template } = this.drawData;
+            this.release();
+
+            const width = xbr - xtl;
+            const height = ybr - ytl;
+
+            const transformation: (p: Point2D) => Point2D = p =>
+                translate([xtl, ytl])(
+                    scale([width, height])(p)
+                )
+
+            const points = templatePoints
+                .map(transformation)
+                .reduce((p, c) => p.concat(c), []);
+            // change this
+            this.pastePoints(pointsToString(points));
+
+            if (this.canceled) return;
+            if (width * height >= consts.AREA_THRESHOLD) {
+                this.onDrawDone({
+                    shapeType,
+                    points,
+                    labels: template.labels,
+                }, Date.now() - this.startTimestamp);
+            }
+        }).on('drawupdate', (): void => {
+            this.shapeSizeElement.update(this.drawInstance);
+        }).addClass('cvat_canvas_shape_drawing').attr({
+            'stroke-width': consts.BASE_STROKE_WIDTH / this.geometry.scale,
+        });
     }
 
     public constructor(
