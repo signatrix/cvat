@@ -745,7 +745,8 @@ export class DrawHandlerImpl implements DrawHandler {
             if (this.canceled) return;
             if (width * height >= consts.AREA_THRESHOLD) {
                 const points = templatePoints
-                    .map(transformation);
+                    .map(transformation)
+                    .reduce((p, c) => p.concat(c), [] as number[]);
 
                 this.onDrawDone({
                     shapeType,
