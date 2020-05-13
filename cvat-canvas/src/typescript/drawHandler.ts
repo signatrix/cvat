@@ -751,6 +751,7 @@ export class DrawHandlerImpl implements DrawHandler {
                 this.onDrawDone({
                     shapeType,
                     points,
+                    edges: template.edges,
                     labels: template.labels,
                 }, Date.now() - this.startTimestamp);
             }
