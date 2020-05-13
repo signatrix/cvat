@@ -702,11 +702,11 @@ export class DrawHandlerImpl implements DrawHandler {
         const scale: (p: Point2D) => (x: Point2D) => Point2D = ([w, h]) => ([x, y]) => [x * w, y * h];
         const invOnInf0: (x: number) => number = x => x === 0 ? x : 1 / x;
 
-        const normalize: (p: Point2D[]) => Point2D[] = p => {
-            const [Mx, My] = p.reduce(([Mx, My], [x, y]) => [Math.max(Mx, x), Math.max(My, y)], [-Infinity, -Infinity]);
-            const [mx, my] = p.reduce(([Mx, My], [x, y]) => [Math.min(Mx, x), Math.min(My, y)], [Infinity, Infinity]);
+        const normalize: (ps: Point2D[]) => Point2D[] = ps => {
+            const [Mx, My] = ps.reduce(([Mx, My], [x, y]) => [Math.max(Mx, x), Math.max(My, y)], [-Infinity, -Infinity]);
+            const [mx, my] = ps.reduce(([Mx, My], [x, y]) => [Math.min(Mx, x), Math.min(My, y)], [Infinity, Infinity]);
             const [w, h] = [Mx - my, My - my];
-            return p.map(
+            return ps.map(
                 p => scale([invOnInf0(w), invOnInf0(h)])(
                     translate([-mx, -my])(
                         p
