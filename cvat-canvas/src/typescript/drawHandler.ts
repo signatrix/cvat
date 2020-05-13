@@ -691,21 +691,28 @@ export class DrawHandlerImpl implements DrawHandler {
     }
 
     public drawTemplate() {
-        const { shapeType, template } = this.drawData;
-
-        console.log(this.drawData);
-        console.log('>>> drawing template');
+        const { template } = this.drawData;
 
         type Point2D = [number, number];
 
-        const translate: (p: Point2D) => (x: Point2D) => Point2D = ([x0, y0]) => ([x, y]) => [x + x0, y + y0];
-        const scale: (p: Point2D) => (x: Point2D) => Point2D = ([w, h]) => ([x, y]) => [x * w, y * h];
-        const invOnInf0: (x: number) => number = x => x === 0 ? x : 1 / x;
+        const translate: (p: Point2D) => (x: Point2D) => Point2D = ([x0, y0]) =>
+            ([x, y]) => [x + x0, y + y0];
+        const scale: (p: Point2D) => (x: Point2D) => Point2D = ([w, h]) =>
+            ([x, y]) => [x * w, y * h];
+        const invOnInf0: (x: number) => number = x =>
+            x === 0 ? x : 1 / x;
 
         const normalize: (ps: Point2D[]) => Point2D[] = ps => {
-            const [Mx, My] = ps.reduce(([Mx, My], [x, y]) => [Math.max(Mx, x), Math.max(My, y)], [-Infinity, -Infinity]);
-            const [mx, my] = ps.reduce(([Mx, My], [x, y]) => [Math.min(Mx, x), Math.min(My, y)], [Infinity, Infinity]);
+            const [Mx, My] = ps.reduce(
+                ([Mx, My], [x, y]) => [Math.max(Mx, x), Math.max(My, y)],
+                [-Infinity, -Infinity]
+            );
+            const [mx, my] = ps.reduce(
+                ([Mx, My], [x, y]) => [Math.min(Mx, x), Math.min(My, y)],
+                [Infinity, Infinity]
+            );
             const [w, h] = [Mx - my, My - my];
+
             return ps.map(
                 p => scale([invOnInf0(w), invOnInf0(h)])(
                     translate([-mx, -my])(
@@ -717,17 +724,13 @@ export class DrawHandlerImpl implements DrawHandler {
 
         const templatePoints = normalize(template.vertices);
 
-        // default box drawing
-        this.drawBox();
-        // Draw instance was initialized after drawBox();
+        this.drawInstance = this.canvas.rect();
         this.shapeSizeElement = displayShapeSize(this.canvas, this.text);
 
-        this.drawInstance = this.canvas.rect();
         this.drawInstance.on('drawstop', (e: Event): void => {
             const bbox = (e.target as SVGRectElement).getBBox();
             const [xtl, ytl, xbr, ybr] = this.getFinalRectCoordinates(bbox);
             const { shapeType, template } = this.drawData;
-            this.release();
 
             const width = xbr - xtl;
             const height = ybr - ytl;
@@ -735,16 +738,15 @@ export class DrawHandlerImpl implements DrawHandler {
             const transformation: (p: Point2D) => Point2D = p =>
                 translate([xtl, ytl])(
                     scale([width, height])(p)
-                )
+                );
 
-            const points = templatePoints
-                .map(transformation)
-                .reduce((p, c) => p.concat(c), []);
-            // change this
-            this.pastePoints(pointsToString(points));
+            this.release();
 
             if (this.canceled) return;
             if (width * height >= consts.AREA_THRESHOLD) {
+                const points = templatePoints
+                    .map(transformation);
+
                 this.onDrawDone({
                     shapeType,
                     points,
