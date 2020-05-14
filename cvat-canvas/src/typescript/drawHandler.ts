@@ -691,39 +691,6 @@ export class DrawHandlerImpl implements DrawHandler {
     }
 
     public drawTemplate() {
-        const { template } = this.drawData;
-
-        type Point2D = [number, number];
-
-        const translate: (p: Point2D) => (x: Point2D) => Point2D = ([x0, y0]) =>
-            ([x, y]) => [x + x0, y + y0];
-        const scale: (p: Point2D) => (x: Point2D) => Point2D = ([w, h]) =>
-            ([x, y]) => [x * w, y * h];
-        const invOnInf0: (x: number) => number = x =>
-            x === 0 ? x : 1 / x;
-
-        const normalize: (ps: Point2D[]) => Point2D[] = ps => {
-            const [Mx, My] = ps.reduce(
-                ([Mx, My], [x, y]) => [Math.max(Mx, x), Math.max(My, y)],
-                [-Infinity, -Infinity]
-            );
-            const [mx, my] = ps.reduce(
-                ([Mx, My], [x, y]) => [Math.min(Mx, x), Math.min(My, y)],
-                [Infinity, Infinity]
-            );
-            const [w, h] = [Mx - mx, My - my];
-
-            return ps.map(
-                p => scale([invOnInf0(w), invOnInf0(h)])(
-                    translate([-mx, -my])(
-                        p
-                    )
-                )
-            );
-        }
-
-        const templatePoints = normalize(template.vertices);
-
         this.drawInstance = this.canvas.rect();
         this.shapeSizeElement = displayShapeSize(this.canvas, this.text);
 
@@ -735,17 +702,12 @@ export class DrawHandlerImpl implements DrawHandler {
             const width = xbr - xtl;
             const height = ybr - ytl;
 
-            const transformation: (p: Point2D) => Point2D = p =>
-                translate([xtl, ytl])(
-                    scale([width, height])(p)
-                );
-
             this.release();
 
             if (this.canceled) return;
             if (width * height >= consts.AREA_THRESHOLD) {
-                const points = templatePoints
-                    .map(transformation);
+                const points = template.vertices
+                    .map(([x, y]) => [width * x + xtl, height * y + ytl]);
 
                 this.onDrawDone({
                     shapeType,
