@@ -711,7 +711,7 @@ export class DrawHandlerImpl implements DrawHandler {
                 ([Mx, My], [x, y]) => [Math.min(Mx, x), Math.min(My, y)],
                 [Infinity, Infinity]
             );
-            const [w, h] = [Mx - my, My - my];
+            const [w, h] = [Mx - mx, My - my];
 
             return ps.map(
                 p => scale([invOnInf0(w), invOnInf0(h)])(
