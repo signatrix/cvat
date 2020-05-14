@@ -39,12 +39,12 @@ interface PointData {
     label: LabelData;
     zOrder: number;
     frame: number;
-    nameHint: string | undefined;
+    nameHint?: string | undefined;
 }
 
 interface VertexTemplate {
     location: [number, number];
-    nameHint: string | undefined;
+    nameHint?: string | undefined;
 }
 
 interface EdgeTemplate {
@@ -129,6 +129,7 @@ interface Props {
     onChangeGridColor(color: GridColor): void;
     onSwitchGrid(enabled: boolean): void;
     onSwitchAutomaticBordering(enabled: boolean): void;
+    onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
 }
 
 export default class CanvasWrapperComponent extends React.PureComponent<Props> {
@@ -324,6 +325,7 @@ export default class CanvasWrapperComponent extends React.PureComponent<Props> {
             frame,
             onShapeDrawn,
             onCreateAnnotations,
+            onCreateAnnotationsAndGrouping,
         } = this.props;
 
         if (!event.detail.continue) {
@@ -339,7 +341,21 @@ export default class CanvasWrapperComponent extends React.PureComponent<Props> {
         }
 
         if (state.shapeType === 'template') {
-            state;
+            const { points = [], labels = [], zOrder = 0 } = state;
+
+            const states = points.map((ps: any, idx: number) => {
+                const label = labels[idx];
+
+                return createPoint({
+                    points: ps,
+                    label: { id: label },
+                    zOrder,
+                    frame,
+                })
+            });
+
+            onCreateAnnotationsAndGrouping(jobInstance, frame, states);
+
             return;
         }
 
