@@ -4,6 +4,7 @@ import Text from 'antd/lib/typography/Text';
 import { Canvas } from 'cvat-canvas-wrapper';
 import getCore from 'cvat-core-wrapper';
 import React, { FC, useCallback, useEffect, useState } from 'react';
+import { ShapeType } from 'reducers/interfaces';
 
 const cvat = getCore();
 
@@ -31,17 +32,82 @@ export const TemplateControl: FC<TemplateControlProps> = ({
 }) => {
     const template: VertexTemplate[] = [
         {
-            location: [302.470703125, 280.466796875],
+            location: [0.5, 0],
             nameHint: "Head"
         },
         {
-            location: [200.470703125, 280.466796875],
-            nameHint: "LHand"
+            location: [0.5, 0.1],
+            nameHint: "Neck"
+        },
+
+        {
+            location: [0.28, 0.12],
+            nameHint: "RShoulder"
         },
         {
-            location: [400.470703125, 280.466796875],
-            nameHint: "RHand"
-        }
+            location: [0.26, 0.3],
+            nameHint: "RElbow"
+        },
+        {
+            location: [0.24, 0.5],
+            nameHint: "RWrist"
+        },
+
+        {
+            location: [0.72, 0.12],
+            nameHint: "LShoulder"
+        },
+        {
+            location: [0.75, 0.3],
+            nameHint: "LElbow"
+        },
+        {
+            location: [0.76, 0.5],
+            nameHint: "LWrist"
+        },
+
+        {
+            location: [0.30, 0.45],
+            nameHint: "RHip",
+        },
+        {
+            location: [0.27, 0.75],
+            nameHint: "RKnee",
+        },
+        {
+            location: [0.25, 1.0],
+            nameHint: "RAnkle",
+        },
+
+        {
+            location: [0.70, 0.45],
+            nameHint: "LHip",
+        },
+        {
+            location: [0.73, 0.75],
+            nameHint: "LKnee",
+        },
+        {
+            location: [0.75, 1.0],
+            nameHint: "LAnkle",
+        },
+
+        // {
+        //     location: [0, 0],
+        //     nameHint: "tl",
+        // },
+        // {
+        //     location: [1, 0],
+        //     nameHint: "tr",
+        // },
+        // {
+        //     location: [0, 1],
+        //     nameHint: "bl",
+        // },
+        // {
+        //     location: [1, 1],
+        //     nameHint: "br",
+        // }
     ];
 
     const [points, setPoints] = useState<(PointData & { id: number })[]>([]);
