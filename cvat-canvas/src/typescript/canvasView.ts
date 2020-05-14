@@ -1633,6 +1633,7 @@ export class CanvasViewImpl implements CanvasView, Listener {
     }
 
     private addGraph(points: number[], state: any): any {
+        const { edges = [] } = state;
         const graph = (this.adoptedContent as any).group();
 
         const points2D = points.reduce((p, c) => {
