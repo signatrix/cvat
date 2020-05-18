@@ -65,7 +65,7 @@ class Command(BaseCommand):
 
 
 def dump_annotations(task, dump_folder, overwrite=False):
-    if task.assignee.username != 'bot':
+    if task.assignee is not None and task.assignee.username != 'bot':
         task.owner = task.assignee
         task.assignee = User.objects.get(username='bot')
         task.save()
