@@ -31,18 +31,14 @@ class Command(BaseCommand):
         verbose = options['verbose']
 
         exported_tasks = []
-        for user in User.objects.all():
-            tasks = Task.objects.filter(status='completed').filter(Q(assignee=user) | Q(owner=user))
-            if tasks:
-                for task in tasks:
-                    if task not in exported_tasks:
-                        try:
-                            dump_annotations(task, options['dump_folder'], overwrite=options['overwrite'])
-                            exported_tasks.append(task)
-                        except Exception as e:
-                            print(e)
-                            print("Could not export annotation for " + task.name + "\nContinuing...")
-                            continue
+        for task in Task.objects.filter(status='completed', owner__isnull=False, assignee__isnull=False):
+            try:
+                dump_annotations(task, options['dump_folder'], overwrite=options['overwrite'])
+                exported_tasks.append(task)
+            except Exception as e:
+                print(e)
+                print("Could not export annotation for " + task.name + "\nContinuing...")
+                continue
         if exported_tasks:
             if verbose:
                 print('\nThe following tasks have been exported to ' + options['dump_folder'] + ':')
@@ -65,7 +61,7 @@ class Command(BaseCommand):
 
 
 def dump_annotations(task, dump_folder, overwrite=False):
-    if task.assignee is not None and task.assignee.username != 'bot':
+    if task.assignee.username != 'bot':
         task.owner = task.assignee
         task.assignee = User.objects.get(username='bot')
         task.save()
