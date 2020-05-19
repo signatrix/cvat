@@ -57,7 +57,7 @@ class SegmentAdmin(admin.ModelAdmin):
 class TaskAdmin(admin.ModelAdmin):
     date_hierarchy = 'updated_date'
     readonly_fields = ('created_date', 'updated_date', 'overlap')
-    list_display = ('name', 'mode', 'owner', 'assignee', 'created_date', 'updated_date')
+    list_display = ('name', 'mode', 'owner', 'assignee', 'status', 'created_date', 'updated_date')
     search_fields = ('name', 'mode', 'owner__username', 'owner__first_name',
         'owner__last_name', 'owner__email', 'assignee__username', 'assignee__first_name',
         'assignee__last_name')
