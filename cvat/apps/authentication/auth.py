@@ -215,7 +215,7 @@ def filter_task_queryset(queryset, user):
         return queryset
     else:
         return queryset.filter(Q(owner=user) | Q(assignee=user) |
-            Q(segment__job__assignee=user) | Q(assignee=None)).distinct()
+            Q(segment__job__assignee=user)).distinct()
 
 class TaskGetQuerySetMixin(object):
     def get_queryset(self):
