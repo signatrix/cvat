@@ -1402,7 +1402,7 @@
         }
     }
 
-    class CuboidShape extends PolyShape {
+    class CuboidShape extends Shape {
         constructor(data, clientID, color, injection) {
             super(data, clientID, color, injection);
             this.shapeType = ObjectShape.CUBOID;
@@ -2053,6 +2053,22 @@
                 checkNumberOfPoints(this.shapeType, shape.points);
             }
         }
+
+        interpolatePosition(leftPosition, rightPosition, offset) {
+
+            const positionOffset = leftPosition.points.map((point, index) => (
+                rightPosition.points[index] - point
+            ))
+
+            return {
+                points: leftPosition.points.map((point ,index) => (
+                    point + positionOffset[index] * offset
+                )),
+                occluded: leftPosition.occluded,
+                outside: leftPosition.outside,
+                zOrder: leftPosition.zOrder,
+            };
+        }
     }
 
     RectangleTrack.distance = RectangleShape.distance;
@@ -2061,7 +2077,6 @@
     PointsTrack.distance = PointsShape.distance;
     PointsTrackWithTracking.distance = PointsShape.distance;
     CuboidTrack.distance = CuboidShape.distance;
-    CuboidTrack.interpolatePosition = RectangleTrack.interpolatePosition;
 
     module.exports = {
         RectangleShape,
