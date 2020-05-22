@@ -76,10 +76,17 @@ def dump_annotations(task, dump_folder, overwrite=False):
     dump_annotation_for_task(task, output_folder, overwrite=overwrite)
 
 def delete_task(task):
-    delete_task_data(task.id, task.assignee)
+    try:
+        delete_task_data(task.id, task.assignee)
 
-    shutil.rmtree(task.get_task_dirname(), ignore_errors=True)
-    shutil.rmtree(task.data.get_data_dirname(), ignore_errors=True)
+        data_dirname = task.data.get_data_dirname()
+        task_dirname = task.get_task_dirname()
 
-    task.data.delete()
-    task.delete()
+        task.data.delete()
+        task.delete()
+    except Exception as e:
+        print(f"Could not delete task data for {task}!")
+        print(e)
+    else:
+        shutil.rmtree(data_dirname, ignore_errors=True)
+        shutil.rmtree(task_dirname, ignore_errors=True)
