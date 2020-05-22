@@ -220,8 +220,7 @@ class Command(BaseCommand):
         data_server_files = {
             #            'client_files': [],
             #            'remote_files': [],
-            "server_files[0]": [full_relative_path],
-            "image_quality": 70,
+            "server_files[0]": [full_relative_path]
         }
 
         server_files_resp = requests.post(base_url + 'api/v1/tasks/{}/data'.format(task_id), verify=False, auth=(user, password), data=data_server_files)

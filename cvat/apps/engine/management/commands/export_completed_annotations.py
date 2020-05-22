@@ -1,5 +1,4 @@
 import os
-import shutil
 from datetime import datetime
 from django.db.models import Q
 from django.contrib.auth.models import User
@@ -32,14 +31,18 @@ class Command(BaseCommand):
         verbose = options['verbose']
 
         exported_tasks = []
-        for task in Task.objects.filter(status='completed', owner__isnull=False, assignee__isnull=False):
-            try:
-                dump_annotations(task, options['dump_folder'], overwrite=options['overwrite'])
-                exported_tasks.append(task)
-            except Exception as e:
-                print(e)
-                print("Could not export annotation for " + task.name + "\nContinuing...")
-                continue
+        for user in User.objects.all():
+            tasks = Task.objects.filter(status='completed').filter(Q(assignee=user) | Q(owner=user))
+            if tasks:
+                for task in tasks:
+                    if task not in exported_tasks:
+                        try:
+                            dump_annotations(task, options['dump_folder'], overwrite=options['overwrite'])
+                            exported_tasks.append(task)
+                        except Exception as e:
+                            print(e)
+                            print("Could not export annotation for " + task.name + "\nContinuing...")
+                            continue
         if exported_tasks:
             if verbose:
                 print('\nThe following tasks have been exported to ' + options['dump_folder'] + ':')
@@ -51,7 +54,8 @@ class Command(BaseCommand):
                 answer = input('\nShould these tasks be deleted now? (yes/no): ')
             if answer in ['yes', 'Yes']:
                 for task in exported_tasks:
-                    delete_task(task)
+                    delete_task_data(task.id, task.assignee)
+                    task.delete()
             else:
                 if verbose:
                     print('\nNo tasks were deleted. Make sure you will not export them multiple times to red in the future.')
@@ -74,12 +78,3 @@ def dump_annotations(task, dump_folder, overwrite=False):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     dump_annotation_for_task(task, output_folder, overwrite=overwrite)
-
-def delete_task(task):
-    delete_task_data(task.id, task.assignee)
-
-    shutil.rmtree(task.get_task_dirname(), ignore_errors=True)
-    shutil.rmtree(task.data.get_data_dirname(), ignore_errors=True)
-
-    task.data.delete()
-    task.delete()
