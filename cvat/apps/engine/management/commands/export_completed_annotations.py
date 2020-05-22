@@ -1,4 +1,5 @@
 import os
+import shutil
 from datetime import datetime
 from django.db.models import Q
 from django.contrib.auth.models import User
@@ -50,8 +51,7 @@ class Command(BaseCommand):
                 answer = input('\nShould these tasks be deleted now? (yes/no): ')
             if answer in ['yes', 'Yes']:
                 for task in exported_tasks:
-                    delete_task_data(task.id, task.assignee)
-                    task.delete()
+                    delete_task(task)
             else:
                 if verbose:
                     print('\nNo tasks were deleted. Make sure you will not export them multiple times to red in the future.')
@@ -74,3 +74,12 @@ def dump_annotations(task, dump_folder, overwrite=False):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     dump_annotation_for_task(task, output_folder, overwrite=overwrite)
+
+def delete_task(task):
+    delete_task_data(task.id, task.assignee)
+
+    shutil.rmtree(task.get_task_dirname(), ignore_errors=True)
+    shutil.rmtree(task.data.get_data_dirname(), ignore_errors=True)
+
+    task.data.delete()
+    task.delete()
