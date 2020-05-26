@@ -585,6 +585,27 @@
                 return response.data;
             }
 
+            async function getTracking({
+                jobId, trackingJob = { track, startFrame, stopFrame }
+
+            }) {
+                const { backendAPI, proxy } = config;
+                const url = `${backendAPI}/tracking/track`;
+                const data = JSON.stringify({jobId, trackingJob });
+
+                try {
+                    const response = await Axios.post(url, data, {
+                        proxy,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    return response.data;
+                } catch (errorData) {
+                    throw generateError(errorData);
+                }
+            }
+
             // Session is 'task' or 'job'
             async function uploadAnnotations(session, id, file, format) {
                 const { backendAPI } = config;
