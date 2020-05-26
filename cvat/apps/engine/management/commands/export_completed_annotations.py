@@ -64,7 +64,7 @@ def dump_annotations(task, dump_folder, overwrite=False):
         task.owner = task.assignee
         task.assignee = User.objects.get(username='bot')
         task.save()
-    if any(i in task.name for i in ('/', '-', '.')):
+    if any(i in task.name for i in ('/', '.')):
         # case that the tasks name does not adhere to the database_datasetid[_labelsetid] format
         output_folder = dump_folder
     else:
