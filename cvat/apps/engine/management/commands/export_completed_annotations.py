@@ -27,10 +27,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if not options['dump_folder']:
             options['dump_folder'] = os.path.join("/home/django/share/out/", datetime.now().strftime("%Y_%m_%d"))
-        if not os.path.exists(options['dump_folder']):
-            os.makedirs(options['dump_folder'])
         verbose = options['verbose']
-
         exported_tasks = []
         for task in Task.objects.filter(status='completed', owner__isnull=False, assignee__isnull=False):
             try:
@@ -61,6 +58,8 @@ class Command(BaseCommand):
 
 
 def dump_annotations(task, dump_folder, overwrite=False):
+    if not os.path.exists(dump_folder):
+        os.makedirs(dump_folder)
     if task.assignee.username != 'bot':
         task.owner = task.assignee
         task.assignee = User.objects.get(username='bot')
