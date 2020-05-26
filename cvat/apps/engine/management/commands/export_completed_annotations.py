@@ -85,7 +85,7 @@ def delete_task(task):
         task.data.delete()
         task.delete()
     except Exception as e:
-        print(f"Could not delete task data for {task}!")
+        print("Could not delete task data for " + str(task))
         print(e)
     else:
         shutil.rmtree(data_dirname, ignore_errors=True)
