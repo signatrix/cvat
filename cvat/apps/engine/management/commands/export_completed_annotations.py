@@ -52,9 +52,6 @@ class Command(BaseCommand):
             else:
                 if verbose:
                     print('\nNo tasks were deleted. Make sure you will not export them multiple times to red in the future.')
-        else:
-            if verbose:
-                print('No completed tasks were exported.')
 
 
 def dump_annotations(task, dump_folder, overwrite=False):
