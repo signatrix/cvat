@@ -224,7 +224,7 @@
                     continue;
                 }
 
-                const stateData = object.get(frame);
+                const stateData = object.get(frame, this.trackingData);
                 if (!allTracks && stateData.outside && !stateData.keyframe) {
                     continue;
                 }
