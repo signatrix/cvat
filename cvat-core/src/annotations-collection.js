@@ -124,6 +124,7 @@
             this.shapes = {}; // key is a frame
             this.tags = {}; // key is a frame
             this.tracks = [];
+            this.trackingData = {};
             this.objects = {}; // key is a client id
             this.count = 0;
             this.flush = false;
@@ -137,6 +138,10 @@
                 history: this.history,
                 groupColors: {},
             };
+        }
+
+        updateTrackingData(tracking) {
+            this.trackingData = tracking;
         }
 
         import(data) {
