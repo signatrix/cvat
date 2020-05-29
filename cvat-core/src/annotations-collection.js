@@ -96,6 +96,9 @@
             case 'cuboid':
                 trackModel = new CuboidTrack(trackData, clientID, color, injection);
                 break;
+            case 'cuboid':
+                trackModel = new CuboidTrack(trackData, clientID, color, injection);
+                break;
             default:
                 throw new DataError(
                     `An unexpected type of track "${type}"`,

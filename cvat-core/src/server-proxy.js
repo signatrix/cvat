@@ -752,6 +752,13 @@
                     }),
                     writable: false,
                 },
+
+                logs: {
+                    value: Object.freeze({
+                        save: saveLogs,
+                    }),
+                    writable: false,
+                },
             }));
         }
     }
