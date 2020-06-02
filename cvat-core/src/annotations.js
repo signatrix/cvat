@@ -89,6 +89,17 @@
         return cache.get(session).collection.get(frame, allTracks, filters);
     }
 
+    function updateTrackingData(session, trackingData) {
+        const sessionType = session instanceof Task ? 'task' : 'job';
+        const cache = getCache(sessionType);
+
+        if (!cache.has(session)) {
+            return;
+        }
+
+        cache.get(session).annotations.updateTrackingData(trackingData);
+    }
+
     async function saveAnnotations(session, onUpdate) {
         const sessionType = session instanceof Task ? 'task' : 'job';
         const cache = getCache(sessionType);
