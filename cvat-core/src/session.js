@@ -720,6 +720,7 @@
             // So, we need return it
             this.annotations = {
                 get: Object.getPrototypeOf(this).annotations.get.bind(this),
+                updateTrackingData: Object.getPrototypeOf(this).annotations.updateTrackingData.bind(this),
                 put: Object.getPrototypeOf(this).annotations.put.bind(this),
                 save: Object.getPrototypeOf(this).annotations.save.bind(this),
                 dump: Object.getPrototypeOf(this).annotations.dump.bind(this),
@@ -1272,6 +1273,7 @@
             // So, we need return it
             this.annotations = {
                 get: Object.getPrototypeOf(this).annotations.get.bind(this),
+                updateTrackingData: Object.getPrototypeOf(this).annotations.updateTrackingData.bind(this),
                 put: Object.getPrototypeOf(this).annotations.put.bind(this),
                 save: Object.getPrototypeOf(this).annotations.save.bind(this),
                 dump: Object.getPrototypeOf(this).annotations.dump.bind(this),
@@ -1353,6 +1355,7 @@
 
     const {
         getAnnotations,
+        updateTrackingData,
         putAnnotations,
         saveAnnotations,
         hasUnsavedChanges,
@@ -1451,6 +1454,10 @@
         const annotationsData = await getAnnotations(this, frame, allTracks, filters);
         return annotationsData;
     };
+
+    Job.prototype.annotations.updateTrackingData.implementation = function(trackingData) {
+        updateTrackingData(this, trackingData);
+    }
 
     Job.prototype.annotations.search.implementation = function (filters, frameFrom, frameTo) {
         if (!Array.isArray(filters) || filters.some((filter) => typeof (filter) !== 'string')) {
@@ -1705,6 +1712,10 @@
         const result = await getAnnotations(this, frame, allTracks, filters);
         return result;
     };
+
+    Task.prototype.annotations.updateTrackingData.implementation = function(trackingData) {
+        updateTrackingData(this, trackingData);
+    }
 
     Task.prototype.annotations.search.implementation = function (filters, frameFrom, frameTo) {
         if (!Array.isArray(filters) || filters.some((filter) => typeof (filter) !== 'string')) {
