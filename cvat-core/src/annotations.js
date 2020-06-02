@@ -371,6 +371,7 @@
         dumpAnnotations,
         importAnnotations,
         exportAnnotations,
+        updateTrackingData,
         exportDataset,
         undoActions,
         redoActions,
