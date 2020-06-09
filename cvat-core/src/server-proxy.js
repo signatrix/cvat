@@ -586,8 +586,7 @@
             }
 
             async function getTracking({
-                jobId, trackingJob = { track, startFrame, stopFrame }
-
+                jobId, trackingJob,
             }) {
                 const { backendAPI, proxy } = config;
                 const url = `${backendAPI}/tracking/track`;
@@ -738,6 +737,7 @@
                         getAnnotations,
                         dumpAnnotations,
                         uploadAnnotations,
+                        getTracking,
                     }),
                     writable: false,
                 },
