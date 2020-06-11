@@ -19,6 +19,7 @@ import {
     createAnnotationsAsync,
     saveAnnotationsAsync,
     createAnnotationsAndGroupAsync,
+    trackAnnotationsAsync,
 } from 'actions/annotation-actions';
 import ControlsSideBarComponent from 'components/annotation-page/standard-workspace/controls-side-bar/controls-side-bar';
 import { ActiveControl, CombinedState, Rotation } from 'reducers/interfaces';
@@ -49,6 +50,7 @@ interface DispatchToProps {
     onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
+    onTrackAnnotation(sessionInstance: any): Promise<void>;
 }
 
 function mapStateToProps(state: CombinedState): StateToProps {
@@ -124,6 +126,9 @@ function dispatchToProps(dispatch: ThunkDispatch<{}, {}, AnyAction>): DispatchTo
         onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void> {
             return dispatch(createAnnotationsAndGroupAsync(sessionInstance, frame, states));
         },
+        onTrackAnnotation(sessionInstance: any): Promise<void> {
+            return dispatch(trackAnnotationsAsync(sessionInstance));
+        }
     };
 }
 
