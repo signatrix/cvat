@@ -1356,6 +1356,7 @@
     const {
         getAnnotations,
         updateTrackingData,
+        computeTrackingData,
         putAnnotations,
         saveAnnotations,
         hasUnsavedChanges,
@@ -1457,6 +1458,11 @@
 
     Job.prototype.annotations.updateTrackingData.implementation = function(trackingData) {
         updateTrackingData(this, trackingData);
+    }
+
+    Job.prototype.annotations.computeTrackingData.implementation = async function(args) {
+        const trackingData = await computeTrackingData(args);
+        return trackingData;
     }
 
     Job.prototype.annotations.search.implementation = function (filters, frameFrom, frameTo) {
@@ -1715,6 +1721,11 @@
 
     Task.prototype.annotations.updateTrackingData.implementation = function(trackingData) {
         updateTrackingData(this, trackingData);
+    }
+
+    Task.prototype.annotations.computeTrackingData.implementation = async function(args) {
+        const trackingData = await computeTrackingData(args);
+        return trackingData;
     }
 
     Task.prototype.annotations.search.implementation = function (filters, frameFrom, frameTo) {
