@@ -121,13 +121,13 @@
                         return result;
                     },
 
-                    updateTrackingData() {
-                        const result = prototype.annotations.updateTrackingData.implementation.call(this);
+                    updateTrackingData(args) {
+                        const result = prototype.annotations.updateTrackingData.implementation.call(this, args);
                         return result;
                     },
 
-                    computeTrackingData() {
-                        const result = prototype.annotations.computeTrackingData.implementation.call(this);
+                    computeTrackingData(args) {
+                        const result = prototype.annotations.computeTrackingData.implementation.call(this, args);
                         return result
                     },
                 },
