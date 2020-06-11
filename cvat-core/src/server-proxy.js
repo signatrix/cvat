@@ -585,12 +585,10 @@
                 return response.data;
             }
 
-            async function getTracking({
-                jobId, trackingJob,
-            }) {
+            async function getTracking(args) {
                 const { backendAPI, proxy } = config;
                 const url = `${backendAPI}/tracking/track`;
-                const data = JSON.stringify({jobId, trackingJob });
+                const data = JSON.stringify(args);
 
                 try {
                     const response = await Axios.post(url, data, {
