@@ -120,6 +120,16 @@
                             .hasUnsavedChanges.implementation.call(this);
                         return result;
                     },
+
+                    updateTrackingData() {
+                        const result = prototype.annotations.updateTrackingData.implementation.call(this);
+                        return result;
+                    },
+
+                    computeTrackingData() {
+                        const result = prototype.annotations.computeTrackingData.implementation.call(this);
+                        return result
+                    },
                 },
                 writable: true,
             }),
