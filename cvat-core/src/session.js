@@ -731,6 +731,7 @@
             this.annotations = {
                 get: Object.getPrototypeOf(this).annotations.get.bind(this),
                 updateTrackingData: Object.getPrototypeOf(this).annotations.updateTrackingData.bind(this),
+                computeTrackingData: Object.getPrototypeOf(this).annotations.computeTrackingData.bind(this),
                 put: Object.getPrototypeOf(this).annotations.put.bind(this),
                 save: Object.getPrototypeOf(this).annotations.save.bind(this),
                 dump: Object.getPrototypeOf(this).annotations.dump.bind(this),
@@ -1284,6 +1285,7 @@
             this.annotations = {
                 get: Object.getPrototypeOf(this).annotations.get.bind(this),
                 updateTrackingData: Object.getPrototypeOf(this).annotations.updateTrackingData.bind(this),
+                computeTrackingData: Object.getPrototypeOf(this).annotations.computeTrackingData.bind(this),
                 put: Object.getPrototypeOf(this).annotations.put.bind(this),
                 save: Object.getPrototypeOf(this).annotations.save.bind(this),
                 dump: Object.getPrototypeOf(this).annotations.dump.bind(this),
