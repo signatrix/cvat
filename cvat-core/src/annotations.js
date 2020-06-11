@@ -100,6 +100,10 @@
         cache.get(session).annotations.updateTrackingData(trackingData);
     }
 
+    async function computeTrackingData(args) {
+        return serverProxy.annotations.getTracking(args);
+    }
+
     async function saveAnnotations(session, onUpdate) {
         const sessionType = session instanceof Task ? 'task' : 'job';
         const cache = getCache(sessionType);
@@ -357,6 +361,7 @@
 
     module.exports = {
         getAnnotations,
+        computeTrackingData,
         putAnnotations,
         saveAnnotations,
         hasUnsavedChanges,
