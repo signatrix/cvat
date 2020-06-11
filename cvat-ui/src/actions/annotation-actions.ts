@@ -1293,6 +1293,14 @@ ThunkAction<Promise<void>, {}, {}, AnyAction> {
     };
 }
 
+export function trackAnnotationsAsync(sessionInstance: any, frame: number):
+    ThunkAction<Promise<void>, {}, {}, AnyAction> {
+    return async (): Promise<void> => {
+        const trackingData = await sessionInstance.annotations.computeTrackingData({});
+        sessionInstance.annotations.updateTrackingData(trackingData);
+    }
+}
+
 export function splitAnnotationsAsync(sessionInstance: any, frame: number, stateToSplit: any):
 ThunkAction<Promise<void>, {}, {}, AnyAction> {
     return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
