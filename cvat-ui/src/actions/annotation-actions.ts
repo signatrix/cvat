@@ -1293,7 +1293,7 @@ ThunkAction<Promise<void>, {}, {}, AnyAction> {
     };
 }
 
-export function trackAnnotationsAsync(sessionInstance: any, frame: number):
+export function trackAnnotationsAsync(sessionInstance: any):
     ThunkAction<Promise<void>, {}, {}, AnyAction> {
     return async (): Promise<void> => {
         const trackingData = await sessionInstance.annotations.computeTrackingData({});
