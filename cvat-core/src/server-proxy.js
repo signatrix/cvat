@@ -589,7 +589,7 @@
                 const { backendAPI, proxy } = config;
                 const { origin } = new URL(backendAPI);
 
-                const url = `${origin}/tracking/track`;
+                const url = `${origin}/tracking/track-points`;
                 const data = JSON.stringify(args);
 
                 try {
