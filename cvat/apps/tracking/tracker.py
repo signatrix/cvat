@@ -22,17 +22,19 @@ def cv_bbox_to_rectangle(cv_bbox):
     """
     return (cv_bbox[0], cv_bbox[1], cv_bbox[0] + cv_bbox[2], cv_bbox[1] + cv_bbox[3])
 
-def point_to_cv_bbox(rectangle_points):
+POINT_WIDTH = 50  # arbitrary value
+POINT_HEIGHT = 50
+
+def point_to_cv_bbox(point):
     """
-    Convert the CVAT rectangle points (serverside) to a OpenCV rectangle.
-    :param tuple rectangle_points: Tuple of form (x1,y1,x2,y2)
+    Convert the CVAT point (serverside) to a OpenCV rectangle.
+    :param tuple point: Tuple of form (x1,y1)
     :return: Form (x1, y1, width, height)
     """
-    raise NotImplementedError()
     # Dimensions must be ints, otherwise tracking throws a exception
-    # return (int(rectangle_points[0]), int(rectangle_points[1]),
-    #         int(rectangle_points[2] - rectangle_points[0]),
-    #         int(rectangle_points[3] - rectangle_points[1]))
+    x, y = point
+    return (int(x - POINT_WIDTH // 2), int(y - POINT_HEIGHT // 2),
+            int(x + POINT_WIDTH // 2), int(y + POINT_HEIGHT // 2))
 
 def cv_bbox_to_point(cv_bbox):
     """
