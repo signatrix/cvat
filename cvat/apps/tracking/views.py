@@ -73,7 +73,7 @@ def track_points(request):
     job_id = request.data['job_id']
 
     # all shapes should be on the same frame
-    start_shapes = request.data['shapes_tracks']
+    shape_tracks = request.data['shape_tracks']
 
     # Until track this bounding box until this frame (excluded)
     stop_frame = request.data['stop_frame']
