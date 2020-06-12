@@ -149,7 +149,7 @@ class PointsTracker:
 
     def track_multi_points(self, task, start_shapes, stop_frame):
         # Only track in to future.
-        start_frame = start_shape[0].frame
+        start_frame = start_shapes[0].frame
         if stop_frame < start_frame:
             return []
 
