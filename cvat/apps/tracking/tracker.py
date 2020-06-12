@@ -146,8 +146,8 @@ class PointsTracker:
         self._tracker_type = trackerType
 
     def track_multi_points(self, task, start_shapes, stop_frame):
-        if not isinstance(start_shape, TrackedShape):
-            raise Exception("start_shape must be of type TrackedShape")
+        if not all(map(lambda shape: isinstance(shape, TrackedShape), start_shapes)):
+            raise Exception("start_shapes must be of type list(TrackedShape)")
 
         # Only track in to future.
         start_frame = start_shape[0].frame
