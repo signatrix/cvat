@@ -8,4 +8,5 @@ from . import views
 
 urlpatterns = [
     path('track', views.track),
+    path('track-points', views.track_points),
 ]
