@@ -1301,7 +1301,7 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
             objectType: string,
         }> = await sessionInstance.annotations.get(frame)
         const trackedPoints = states
-            .map(({ shapeType, objectType }) =>
+            .filter(({ shapeType, objectType }) =>
                 shapeType === 'points' && objectType === 'track');
 
         const trackingData = await sessionInstance.annotations.computeTrackingData({
