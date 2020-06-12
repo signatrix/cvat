@@ -1298,7 +1298,7 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
     return async (): Promise<void> => {
         const states = await sessionInstance.annotations.get(frame);
 
-        const trackingData = await sessionInstance.annotations.computeTrackingData(states);
+        const trackingData = await sessionInstance.annotations.computeTrackingData({ states, frame });
         sessionInstance.annotations.updateTrackingData(trackingData);
     }
 }
