@@ -1305,7 +1305,7 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
                 shapeType === 'points' && objectType === 'track');
 
         const trackingData = await sessionInstance.annotations.computeTrackingData({
-            job_id: sessionInstance.id.get(),
+            job_id: sessionInstance.id,
             shapes_tracks: trackedPoints,
             stop_frame: frame +  1,
          });
