@@ -1296,9 +1296,20 @@ ThunkAction<Promise<void>, {}, {}, AnyAction> {
 export function trackAnnotationsAsync(sessionInstance: any, frame: number):
     ThunkAction<Promise<void>, {}, {}, AnyAction> {
     return async (): Promise<void> => {
-        const states = await sessionInstance.annotations.get(frame);
+        const states: Array<{
+            shapeType: string,
+            objectType: string,
+        }> = await sessionInstance.annotations.get(frame)
+        const trackedPoints = states
+            .map(({ shapeType, objectType }) =>
+                shapeType === 'points' && objectType === 'track');
 
-        const trackingData = await sessionInstance.annotations.computeTrackingData({ states, frame });
+        const trackingData = await sessionInstance.annotations.computeTrackingData({
+            job_id: sessionInstance.id.get(),
+            shapes_tracks: trackedPoints,
+            stop_frame: frame +  1,
+         });
+
         sessionInstance.annotations.updateTrackingData(trackingData);
     }
 }
