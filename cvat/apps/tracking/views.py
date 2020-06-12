@@ -12,7 +12,7 @@ from cvat.apps.authentication.decorators import login_required
 from cvat.apps.engine.data_manager import TrackManager
 from cvat.apps.engine.models import (Job, TrackedShape)
 from cvat.apps.engine.serializers import (TrackedShapeSerializer)
-from .tracker import RectangleTracker
+from .tracker import RectangleTracker, PointsTracker
 
 # TODO: Put tracker into background task.
 
@@ -61,3 +61,43 @@ def track(request):
     track_with_new_shapes['shapes'] = new_shapes
 
     return JsonResponse(track_with_new_shapes)
+
+
+@api_view(['POST'])
+@login_required
+@permission_required(perm=['engine.task.access'], raise_exception=True)
+def track_points(request):
+    # Track (with bounding boxes) that should be enriched with new shapes.
+    # Done by tracking a existing bounding box
+
+    job_id = request.data['job_id']
+
+    # all shapes should be on the same frame
+    start_shapes = request.data['shapes_tracks']
+
+    # Until track this bounding box until this frame (excluded)
+    stop_frame = request.data['stop_frame']
+
+    # Track the bounding boxes in images from this track
+    task = Job.objects.get(pk=job_id).segment.task
+
+    def shape_to_db(tracked_shape_on_wire):
+        s = copy.copy(tracked_shape_on_wire)
+        s.pop('group', 0)
+        s.pop('attributes', 0)
+        s.pop('label_id', 0)
+        s.pop('byMachine', 0)
+        s.pop('keyframe')
+        return TrackedShape(**s)
+
+    # Do the actual tracking and serializee back
+    tracker = PointsTracker()
+    new_shapes = tracker.track_multi_points(task, start_shapes, stop_frame)
+    new_shapes = [TrackedShapeSerializer(s).data for s in new_shapes]
+
+    response = {
+        'start_shapes': start_shapes,
+        'tracked_shapes': new_shapes,
+    }
+
+    return JsonResponse(response)
