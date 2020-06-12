@@ -169,7 +169,7 @@ class PointsTracker:
         shapes_by_tracking = []
         for frame, img  in images:
             # Let the tracker find the bounding box in the next image(s)
-            no_error, bbox = trackers.update(img)
+            no_errors, boxes = trackers.update(img)
 
             if no_error:
                 new_shape = copy.copy(start_shape)
