@@ -90,6 +90,8 @@ def track_points(request):
         s.pop('keyframe')
         return TrackedShape(**s)
 
+    start_shapes = list(map(shape_to_db, shape_tracks))
+
     # Do the actual tracking and serializee back
     tracker = PointsTracker()
     new_shapes = tracker.track_multi_points(task, start_shapes, stop_frame)
