@@ -181,3 +181,4 @@ class PointsTracker:
             else:
                 break
 
+        return shapes_by_tracking
