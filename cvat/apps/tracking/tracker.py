@@ -38,12 +38,12 @@ def point_to_cv_bbox(point):
 
 def cv_bbox_to_point(cv_bbox):
     """
-    Convert the OpenCV bounding box points to a CVAT rectangle points.
+    Convert the OpenCV bounding box points to a CVAT point.
     :param tuple cv_bbox: Form (x1, y1, width, height)
-    :return: Form (x1,y1,x2,y2)
+    :return: Form (x1,y1)
     """
-    raise NotImplementedError()
-    # return (cv_bbox[0], cv_bbox[1], cv_bbox[0] + cv_bbox[2], cv_bbox[1] + cv_bbox[3])
+    x1, y1, width, height = cv_bbox
+    return (x1 + width // 2, y1 + height // 2)  # center
 
 
 
