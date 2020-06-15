@@ -1311,13 +1311,26 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
                 points, id: serverID, frame
             }));
 
-        const trackingData = await sessionInstance.annotations.computeTrackingData({
+        const { tracked_shapes: trackedShapes } = await sessionInstance.annotations.computeTrackingData({
             job_id: sessionInstance.id,
             shape_tracks: trackedPoints,
             stop_frame: frame + 5,
-         });
+        });
 
-        // sessionInstance.annotations.updateTrackingData(trackingData);
+        console.log(
+            'trackingData',
+            trackedShapes,
+        )
+
+        const trackingData = trackedShapes.reduce((p: any, c: any) => {
+            const frames = p[c.id] || {};
+            frames[c.frame] = c;
+
+            p[c.id] = frames;
+            return p;
+        }, {});
+
+        sessionInstance.annotations.updateTrackingData(trackingData);
     }
 }
 
