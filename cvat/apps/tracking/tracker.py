@@ -1,4 +1,7 @@
 from cvat.apps.engine.models import TrackedShape
+from cvat.apps.engine.frame_provider import FrameProvider
+
+import numpy as np
 import cv2
 import copy
 
