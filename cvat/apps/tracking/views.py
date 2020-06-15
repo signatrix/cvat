@@ -83,11 +83,6 @@ def track_points(request):
 
     def shape_to_db(tracked_shape_on_wire):
         s = copy.copy(tracked_shape_on_wire)
-        s.pop('group', 0)
-        s.pop('attributes', 0)
-        s.pop('label_id', 0)
-        s.pop('byMachine', 0)
-        s.pop('keyframe')
         return TrackedShape(**s)
 
     start_shapes = list(map(shape_to_db, shape_tracks))
