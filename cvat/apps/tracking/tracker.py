@@ -34,7 +34,7 @@ def point_to_cv_bbox(point):
     # Dimensions must be ints, otherwise tracking throws a exception
     x, y = point
     return (int(x - POINT_WIDTH // 2), int(y - POINT_HEIGHT // 2),
-            int(x + POINT_WIDTH // 2), int(y + POINT_HEIGHT // 2))
+            POINT_WIDTH, POINT_HEIGHT)
 
 def cv_bbox_to_point(cv_bbox):
     """
