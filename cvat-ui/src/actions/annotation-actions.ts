@@ -1307,8 +1307,8 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
         const trackedPoints = states
             .filter(({ shapeType, objectType }) =>
                 shapeType === 'points' && objectType === 'track')
-            .map(({ points, clientID, serverID, frame, }) => ({
-                points, id: serverID, frame, clientID
+            .map(({ points, serverID, frame, }) => ({
+                points, id: serverID, frame
             }));
 
         const trackingData = await sessionInstance.annotations.computeTrackingData({
