@@ -173,7 +173,7 @@ class PointsTracker:
             # Let the tracker find the bounding box in the next image(s)
             no_errors, boxes = trackers.update(img)
 
-            if all(no_errors):
+            if no_errors:
                 for shape, bbox in zip(start_shapes, boxes):
                     new_shape = copy.copy(shape)
                     new_shape.pk = None
