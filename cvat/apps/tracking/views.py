@@ -98,7 +98,7 @@ def track_points(request):
     new_shapes = [TrackedShapeSerializer(s).data for s in new_shapes]
 
     response = {
-        'start_shapes': start_shapes,
+        'start_shapes': [TrackedShapeSerializer(s).data for s in start_shapes],
         'tracked_shapes': new_shapes,
     }
 
