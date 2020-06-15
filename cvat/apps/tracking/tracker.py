@@ -176,7 +176,6 @@ class PointsTracker:
             if no_errors:
                 for shape, bbox in zip(start_shapes, boxes):
                     new_shape = copy.copy(shape)
-                    new_shape.pk = None
                     new_shape.points = cv_bbox_to_point(bbox)
                     new_shape.frame = frame
                     shapes_by_tracking.append(new_shape)
