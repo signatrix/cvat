@@ -55,9 +55,11 @@ def image_iterable_from_task(task, start_frame, stop_frame):
     :param int stop_frame: First frame that is excluded from iteration (excluded)
     :return: Iterable over OpenCV images
     """
+    fp = FrameProvider(task.data)
     for frame in range(start_frame, stop_frame):
-        image_path = task.get_frame_path(frame)
-        img = cv2.imread(image_path)
+        buffer, _ = fp.get_frame(frame)
+        arr = np.fromstring(buffer.read(), np.uint8)
+        img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
         yield frame, img
 
 class RectangleTracker:
