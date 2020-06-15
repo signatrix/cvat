@@ -1299,18 +1299,25 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
         const states: Array<{
             shapeType: string,
             objectType: string,
+            points: number[],
+            clientID: number,
+            serverID: number,
+            frame: number,
         }> = await sessionInstance.annotations.get(frame)
         const trackedPoints = states
             .filter(({ shapeType, objectType }) =>
-                shapeType === 'points' && objectType === 'track');
+                shapeType === 'points' && objectType === 'track')
+            .map(({ points, clientID, serverID, frame, }) => ({
+                points, id: serverID, frame, clientID
+            }));
 
         const trackingData = await sessionInstance.annotations.computeTrackingData({
             job_id: sessionInstance.id,
-            shapes_tracks: trackedPoints,
-            stop_frame: frame +  1,
+            shape_tracks: trackedPoints,
+            stop_frame: frame + 5,
          });
 
-        sessionInstance.annotations.updateTrackingData(trackingData);
+        // sessionInstance.annotations.updateTrackingData(trackingData);
     }
 }
 
