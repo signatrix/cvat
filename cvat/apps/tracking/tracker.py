@@ -59,7 +59,7 @@ def image_iterable_from_task(task, start_frame, stop_frame):
     :return: Iterable over OpenCV images
     """
     fp = FrameProvider(task.data)
-    for frame in range(start_frame, stop_frame):
+    for frame in range(start_frame, stop_frame + 1):
         buffer, _ = fp.get_frame(frame)
         arr = np.fromstring(buffer.read(), np.uint8)
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
