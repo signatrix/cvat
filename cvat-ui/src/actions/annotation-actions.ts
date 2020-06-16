@@ -1324,7 +1324,7 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
 
         const trackingData = trackedShapes.reduce((p: any, c: any) => {
             const frames = p[c.id] || {};
-            frames[c.frame] = c;
+            frames[c.frame] = c.points;
 
             p[c.id] = frames;
             return p;
