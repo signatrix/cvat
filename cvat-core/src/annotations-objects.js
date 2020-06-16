@@ -1982,7 +1982,7 @@
             const rightPosition = Number.isInteger(rightFrame) ? this.shapes[rightFrame] : null;
             const leftPosition = Number.isInteger(leftFrame) ? this.shapes[leftFrame] : null;
 
-            const points = trackingData[targetFrame];
+            const points = trackingData ? trackingData[targetFrame] : undefined;
 
             if (points) {
                 return {
