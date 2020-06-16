@@ -1331,6 +1331,8 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
         }, {});
 
         sessionInstance.annotations.updateTrackingData(trackingData);
+
+        await dispatch(changeFrameAsync(frame + 1));
     }
 }
 
