@@ -97,7 +97,7 @@
             return;
         }
 
-        cache.get(session).annotations.updateTrackingData(trackingData);
+        cache.get(session).collection.updateTrackingData(trackingData);
     }
 
     async function computeTrackingData(args) {
