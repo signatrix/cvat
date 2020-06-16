@@ -2047,6 +2047,7 @@
     PolygonTrack.distance = PolygonShape.distance;
     PolylineTrack.distance = PolylineShape.distance;
     PointsTrack.distance = PointsShape.distance;
+    PointsTrackWithTracking.distance = PointsShape.distance;
     CuboidTrack.distance = CuboidShape.distance;
     CuboidTrack.interpolatePosition = RectangleTrack.interpolatePosition;
 
@@ -2060,6 +2061,7 @@
         PolygonTrack,
         PolylineTrack,
         PointsTrack,
+        PointsTrackWithTracking,
         CuboidTrack,
         Track,
         Shape,
