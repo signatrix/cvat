@@ -1295,7 +1295,7 @@ ThunkAction<Promise<void>, {}, {}, AnyAction> {
 
 export function trackAnnotationsAsync(sessionInstance: any, frame: number):
     ThunkAction<Promise<void>, {}, {}, AnyAction> {
-    return async (): Promise<void> => {
+    return async (dispatch): Promise<void> => {
         const states: Array<{
             shapeType: string,
             objectType: string,
@@ -1319,11 +1319,6 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
             stop_frame: frame + 1,
         });
 
-        console.log(
-            'trackingData',
-            trackedShapes,
-        )
-
         const trackingData = trackedShapes.reduce((p: any, c: any) => {
             const frames = p[c.id] || {};
             frames[c.frame] = c.points;
@@ -1331,6 +1326,11 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
             p[c.id] = frames;
             return p;
         }, {});
+
+        console.log(
+            'trackingData',
+            trackingData,
+        )
 
         sessionInstance.annotations.updateTrackingData(trackingData);
 
