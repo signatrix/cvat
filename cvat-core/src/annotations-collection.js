@@ -59,7 +59,7 @@
             shapeModel = new PolylineShape(shapeData, clientID, color, injection);
             break;
         case 'points':
-            shapeModel = new PointsTrackWithTracking(shapeData, clientID, color, injection);
+            shapeModel = new PointsShape(shapeData, clientID, color, injection);
             break;
         case 'cuboid':
             shapeModel = new CuboidShape(shapeData, clientID, color, injection);
@@ -91,7 +91,7 @@
                 trackModel = new PolylineTrack(trackData, clientID, color, injection);
                 break;
             case 'points':
-                trackModel = new PointsTrack(trackData, clientID, color, injection);
+                trackModel = new PointsTrackWithTracking(trackData, clientID, color, injection);
                 break;
             case 'cuboid':
                 trackModel = new CuboidTrack(trackData, clientID, color, injection);
