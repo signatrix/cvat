@@ -46,13 +46,15 @@ interface Props {
     onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onTrackAnnotation(sessionInstance: any, frame: number): Promise<void>;
+    redrawShape(): void;
 }
 
 export default function ControlsSideBarComponent(props: Props): JSX.Element {
     const {
         canvasInstance,
         activeControl,
-
+        normalizedKeyMap,
+        keyMap,
         mergeObjects,
         groupObjects,
         splitTrack,
@@ -70,6 +72,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         onGroupAnnotations,
         onCreateAnnotationsAndGrouping,
         onTrackAnnotation,
+        redrawShape,
     } = props;
 
     const preventDefault = (event: KeyboardEvent | undefined): void => {
@@ -106,7 +109,12 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
                 canvasInstance.cancel();
                 // repeateDrawShapes gets all the latest parameters
                 // and calls canvasInstance.draw() with them
-                repeatDrawShape();
+
+                if (event && event.shiftKey) {
+                    redrawShape();
+                } else {
+                    repeatDrawShape();
+                }
             } else {
                 canvasInstance.draw({ enabled: false });
             }

@@ -84,8 +84,6 @@ interface StateToProps {
     maxZLayer: number;
     curZLayer: number;
     automaticBordering: boolean;
-    contextVisible: boolean;
-    contextType: ContextMenuType;
     switchableAutomaticBordering: boolean;
     keyMap: Record<string, ExtendedKeyMapOptions>;
 }
@@ -126,10 +124,6 @@ function mapStateToProps(state: CombinedState): StateToProps {
         annotation: {
             canvas: {
                 activeControl,
-                contextMenu: {
-                    visible: contextVisible,
-                    type: contextType,
-                },
                 instance: canvasInstance,
             },
             drawing: {
@@ -225,8 +219,6 @@ function mapStateToProps(state: CombinedState): StateToProps {
         minZLayer,
         maxZLayer,
         automaticBordering,
-        contextVisible,
-        contextType,
         workspace,
         keyMap,
         switchableAutomaticBordering: activeControl === ActiveControl.DRAW_POLYGON
