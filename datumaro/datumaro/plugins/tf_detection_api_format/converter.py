@@ -95,7 +95,7 @@ class TfDetectionApiConverter(Converter, CliPlugin):
                         '}\n\n'
                     )
 
-            anno_path = osp.join(save_dir, '%s.tfrecord' % (subset_name))
+            anno_path = osp.join(save_dir, '%s.tfrecord' % (subset_name[:-1]))
             with tf.io.TFRecordWriter(anno_path) as writer:
                 for item in subset:
                     tf_example = self._make_tf_example(item)
