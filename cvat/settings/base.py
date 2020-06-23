@@ -99,6 +99,7 @@ INSTALLED_APPS = [
     'cvat.apps.git',
     'cvat.apps.dataset_manager',
     'cvat.apps.annotation',
+    'cvat.apps.tracking',
     'django_rq',
     'compressor',
     'cacheops',
