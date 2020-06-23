@@ -24,6 +24,7 @@ import MergeControl from './merge-control';
 import GroupControl from './group-control';
 import SplitControl from './split-control';
 import TemplateControl from './template-control';
+import { Button } from 'antd';
 
 interface Props {
     canvasInstance: Canvas;
@@ -44,6 +45,7 @@ interface Props {
     onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
+    onTrackAnnotation(sessionInstance: any, frame: number): Promise<void>;
 }
 
 export default function ControlsSideBarComponent(props: Props): JSX.Element {
@@ -67,6 +69,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         onCreateAnnotations,
         onGroupAnnotations,
         onCreateAnnotationsAndGrouping,
+        onTrackAnnotation,
     } = props;
 
     const preventDefault = (event: KeyboardEvent | undefined): void => {
@@ -169,6 +172,10 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
                 clockwiseShortcut={normalizedKeyMap.CLOCKWISE_ROTATION}
                 rotateFrame={rotateFrame}
             />
+
+            <hr />
+
+            <Button onClick={() => onTrackAnnotation(jobInstance, frame)}>Track</Button>
 
             <hr />
 

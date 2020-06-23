@@ -50,7 +50,7 @@ interface DispatchToProps {
     onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
-    onTrackAnnotation(sessionInstance: any): Promise<void>;
+    onTrackAnnotation(sessionInstance: any, frame: number): Promise<void>;
 }
 
 function mapStateToProps(state: CombinedState): StateToProps {
@@ -126,8 +126,8 @@ function dispatchToProps(dispatch: ThunkDispatch<{}, {}, AnyAction>): DispatchTo
         onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void> {
             return dispatch(createAnnotationsAndGroupAsync(sessionInstance, frame, states));
         },
-        onTrackAnnotation(sessionInstance: any): Promise<void> {
-            return dispatch(trackAnnotationsAsync(sessionInstance));
+        onTrackAnnotation(sessionInstance: any, frame: number): Promise<void> {
+            return dispatch(trackAnnotationsAsync(sessionInstance, frame));
         }
     };
 }
