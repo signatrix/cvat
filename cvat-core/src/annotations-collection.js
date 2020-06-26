@@ -143,6 +143,17 @@
 
         updateTrackingData(tracking) {
             this.trackingData = tracking;
+
+            merge = key => {
+                oldFrames = this.trackingData[key] || {};
+                newFrames = tracking[key];
+
+                return {...oldFrames, ...newFrames};
+            };
+
+            for (const key in tracking) {
+                this.trackingData[key] = merge(key);
+            }
         }
 
         import(data) {
