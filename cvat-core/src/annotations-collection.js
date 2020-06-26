@@ -144,9 +144,9 @@
         updateTrackingData(tracking) {
             this.trackingData = tracking;
 
-            merge = key => {
-                oldFrames = this.trackingData[key] || {};
-                newFrames = tracking[key];
+            const merge = key => {
+                const oldFrames = this.trackingData[key] || {};
+                const newFrames = tracking[key];
 
                 return {...oldFrames, ...newFrames};
             };
