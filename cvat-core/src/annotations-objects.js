@@ -1983,6 +1983,18 @@
             const leftPosition = Number.isInteger(leftFrame) ? this.shapes[leftFrame] : null;
 
             const points = trackingData ? trackingData[targetFrame] : undefined;
+            const isKeyFrame = targetFrame in this.shapes;
+            const targetPositionPoints = isKeyFrame ? this.shapes[targetFrame].points : undefined;
+
+            if (targetPositionPoints) {
+                return {
+                    points: [...targetPositionPoints],
+                    occluded: leftPosition.occluded,
+                    outside: leftPosition.outside,
+                    zOrder: leftPosition.zOrder,
+                    keyframe: targetFrame in this.shapes,
+                }
+            }
 
             if (points) {
                 return {
