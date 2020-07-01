@@ -1,21 +1,17 @@
 import logging
 import os.path
 import time
+
 import requests
 from django.conf import settings
-from django.contrib.auth.models import User
-from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
-from cvat.apps.engine.models import Task
-from cvat.apps.engine import task
 global_logger = logging.getLogger(__name__)
 
 
 # ./exec_manage init_video_task --video_path "aero/aero_office/dataset_000002/aero_office_000002.mp4" --task_name "aero_office_000002" --labels hand juice cacao pasta chips;\
 # ./exec_manage init_video_task --video_path "aero/aero_office/dataset_000003/aero_office_000003.mp4" --task_name "aero_office_000003" --labels hand juice cacao pasta chips;\
 # ./exec_manage init_video_task --video_path "tesco/tesco02/cam0/2019-01-28_11:44:05.mp4" --task_name "tesco/tesco02/cam0/2019-01-28_11:44:05" --xml_path "/home/django/share/out_bak/tesco/tesco02_cam0_2019-01-28_11_44_05.xml" --wait
-
 
 
 # for i in {60..69}
@@ -60,14 +56,14 @@ class Command(BaseCommand):
                                ]},  # 'cart ~radio=type:empty,full,unclear ~checkbox=difficult:false',
                       'basket': {"name": "basket",
                                  "attributes": [
-                                   {
-                                       "name": "type",
-                                       "mutable": True,
-                                       "input_type": "radio",
-                                       "default_value": "empty",
-                                       "values": ["empty", "full", "unclear"],
-                                   },
-                               ]},  # 'basket ~radio=type:empty,full,unclear
+                                     {
+                                         "name": "type",
+                                         "mutable": True,
+                                         "input_type": "radio",
+                                         "default_value": "empty",
+                                         "values": ["empty", "full", "unclear"],
+                                     },
+                                 ]},  # 'basket ~radio=type:empty,full,unclear
                       'person': {"name": "person",
                                  "attributes": [
                                      {
@@ -96,22 +92,22 @@ class Command(BaseCommand):
                                    },
                                ]},  # 'hand ~radio=type:none,empty,juice,cacao,pasta,chips',
                       'head': {"name": "head",
-                                 "attributes": [
-                                     {
-                                         "name": "facemask",
-                                         "mutable": True,
-                                         "input_type": "checkbox",
-                                         "default_value": "false",
-                                         "values": ["false"]
-                                     },
-                                     {
-                                         "name": "back_head",
-                                         "mutable": True,
-                                         "input_type": "checkbox",
-                                         "default_value": "false",
-                                         "values": ["false"]
-                                     },
-                                 ]},  # 'head ~checkbox=facemask:false' ~back_head=facemask:false'
+                               "attributes": [
+                                   {
+                                       "name": "facemask",
+                                       "mutable": True,
+                                       "input_type": "checkbox",
+                                       "default_value": "false",
+                                       "values": ["false"]
+                                   },
+                                   {
+                                       "name": "back_head",
+                                       "mutable": True,
+                                       "input_type": "checkbox",
+                                       "default_value": "false",
+                                       "values": ["false"]
+                                   },
+                               ]},  # 'head ~checkbox=facemask:false' ~back_head=facemask:false'
                       'juice': {"name": "juice",
                                 "attributes": [
                                     {
