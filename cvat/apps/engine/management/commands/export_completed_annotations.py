@@ -1,7 +1,6 @@
 import os
 import shutil
 from datetime import datetime
-from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
@@ -70,6 +69,7 @@ def dump_annotations(task, dump_folder, overwrite=False):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     dump_annotation_for_task(task, output_folder, overwrite=overwrite)
+
 
 def delete_task(task):
     try:

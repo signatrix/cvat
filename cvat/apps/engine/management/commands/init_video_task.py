@@ -3,12 +3,9 @@ import os.path
 import time
 import requests
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.management import call_command
 from django.core.management.base import BaseCommand
 
-from cvat.apps.engine.models import Task
-from cvat.apps.engine import task
 global_logger = logging.getLogger(__name__)
 
 
@@ -27,9 +24,9 @@ user, password = "cvat", "cvat1234"
 
 # DEPRECATED, USE init_task
 
+
 class Command(BaseCommand):
     help = 'Creates a task given a video\nExample use: \n./exec_manage init_task --video_path "in/edeka_entrance/dataset_000002/video.mp4" --labels cart'
-
 
     def add_arguments(self, parser):
         parser.add_argument('--video_path', type=str, required=True)
@@ -75,22 +72,22 @@ class Command(BaseCommand):
                                      },
                                  ]},  # 'person ~checkbox=difficult:false',
                       'head': {"name": "head",
-                                 "attributes": [
-                                     {
-                                         "name": "facemask",
-                                         "mutable": True,
-                                         "input_type": "checkbox",
-                                         "default_value": "false",
-                                         "values": ["false"]
-                                     },
-                                     {
-                                         "name": "back_head",
-                                         "mutable": True,
-                                         "input_type": "checkbox",
-                                         "default_value": "false",
-                                         "values": ["false"]
-                                     },
-                                 ]},  # 'head ~checkbox=facemask:false' ~back_head=facemask:false'
+                               "attributes": [
+                                   {
+                                       "name": "facemask",
+                                       "mutable": True,
+                                       "input_type": "checkbox",
+                                       "default_value": "false",
+                                       "values": ["false"]
+                                   },
+                                   {
+                                       "name": "back_head",
+                                       "mutable": True,
+                                       "input_type": "checkbox",
+                                       "default_value": "false",
+                                       "values": ["false"]
+                                   },
+                               ]},  # 'head ~checkbox=facemask:false' ~back_head=facemask:false'
                       'hand': {"name": "hand",
                                "attributes": [
                                    {
@@ -193,7 +190,7 @@ class Command(BaseCommand):
             try:
                 print("Adding annotations from {}".format(xml_path))
                 call_command('import_annotation', xml_path=xml_path, task_name=task_name)
-            except:
+            except BaseException:
                 pass
         if res:
             try:
