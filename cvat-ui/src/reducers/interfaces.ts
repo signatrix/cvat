@@ -63,8 +63,7 @@ export interface TasksState {
 }
 
 export interface FormatsState {
-    annotationFormats: any[];
-    datasetFormats: any[];
+    annotationFormats: any;
     fetching: boolean;
     initialized: boolean;
 }
@@ -101,6 +100,19 @@ export interface AboutState {
         canvas: string;
         ui: string;
     };
+    fetching: boolean;
+    initialized: boolean;
+}
+
+export interface UserAgreement {
+    name: string;
+    displayText: string;
+    url: string;
+    required: boolean;
+}
+
+export interface UserAgreementsState {
+    list: UserAgreement[];
     fetching: boolean;
     initialized: boolean;
 }
@@ -239,6 +251,9 @@ export interface NotificationsState {
         boundaries: {
             resetError: null | ErrorState;
         };
+        userAgreements: {
+            fetching: null | ErrorState;
+        };
 
         [index: string]: any;
     };
@@ -290,7 +305,6 @@ export enum StatesOrdering {
 }
 
 export enum ContextMenuType {
-    CANVAS = 'canvas',
     CANVAS_SHAPE = 'canvas_shape',
     CANVAS_SHAPE_POINT = 'canvas_shape_point',
 }
@@ -389,6 +403,7 @@ export interface AnnotationState {
 export enum Workspace {
     STANDARD = 'Standard',
     ATTRIBUTE_ANNOTATION = 'Attribute annotation',
+    TAG_ANNOTATION = 'Tag annotation',
 }
 
 export enum GridColor {
@@ -415,6 +430,7 @@ export enum ColorBy {
 }
 
 export interface PlayerSettingsState {
+    canvasBackgroundColor: string;
     frameStep: number;
     frameSpeed: FrameSpeed;
     resetZoom: boolean;
@@ -450,6 +466,7 @@ export interface SettingsState {
     shapes: ShapesSettingsState;
     workspace: WorkspaceSettingsState;
     player: PlayerSettingsState;
+    showDialog: boolean;
 }
 
 export interface ShortcutsState {
@@ -465,6 +482,7 @@ export interface CombinedState {
     about: AboutState;
     share: ShareState;
     formats: FormatsState;
+    userAgreements: UserAgreementsState;
     plugins: PluginsState;
     models: ModelsState;
     notifications: NotificationsState;
