@@ -132,7 +132,7 @@ class PointsTracker:
     trackerTypes = ['BOOSTING', 'MIL', 'KCF', 'CSRT', 'MEDIANFLOW', 'TLD',
         'MOSSE', 'GOTRUN']
 
-    def __init__(self, trackerType = "MEDIANFLOW"):
+    def __init__(self, trackerType = "CSRT"):
         """Create tracker.
         :param str trackerType: String specifying tracker, see trackerTypes.
         """
