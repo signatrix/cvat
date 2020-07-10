@@ -104,6 +104,13 @@ RUN if [ "$AUTO_SEGMENTATION" = "yes" ]; then \
     bash -i /tmp/components/auto_segmentation/install.sh; \
     fi
 
+ARG TRACKING
+ENV TRACKING=${TRACKING}
+ENV TRACKING_PATH=${HOME}/tracking
+RUN if [ "$TRACKING" = "yes" ]; then \
+    bash -i /tmp/components/tracking/install.sh; \
+    fi
+
 # Install and initialize CVAT, copy all necessary files
 COPY cvat/requirements/ /tmp/requirements/
 COPY supervisord.conf mod_wsgi.conf wait-for-it.sh manage.py ${HOME}/

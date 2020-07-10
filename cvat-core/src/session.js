@@ -120,6 +120,16 @@
                             .hasUnsavedChanges.implementation.call(this);
                         return result;
                     },
+
+                    updateTrackingData(args) {
+                        const result = prototype.annotations.updateTrackingData.implementation.call(this, args);
+                        return result;
+                    },
+
+                    computeTrackingData(args) {
+                        const result = prototype.annotations.computeTrackingData.implementation.call(this, args);
+                        return result
+                    },
                 },
                 writable: true,
             }),
@@ -720,6 +730,8 @@
             // So, we need return it
             this.annotations = {
                 get: Object.getPrototypeOf(this).annotations.get.bind(this),
+                updateTrackingData: Object.getPrototypeOf(this).annotations.updateTrackingData.bind(this),
+                computeTrackingData: Object.getPrototypeOf(this).annotations.computeTrackingData.bind(this),
                 put: Object.getPrototypeOf(this).annotations.put.bind(this),
                 save: Object.getPrototypeOf(this).annotations.save.bind(this),
                 dump: Object.getPrototypeOf(this).annotations.dump.bind(this),
@@ -1272,6 +1284,8 @@
             // So, we need return it
             this.annotations = {
                 get: Object.getPrototypeOf(this).annotations.get.bind(this),
+                updateTrackingData: Object.getPrototypeOf(this).annotations.updateTrackingData.bind(this),
+                computeTrackingData: Object.getPrototypeOf(this).annotations.computeTrackingData.bind(this),
                 put: Object.getPrototypeOf(this).annotations.put.bind(this),
                 save: Object.getPrototypeOf(this).annotations.save.bind(this),
                 dump: Object.getPrototypeOf(this).annotations.dump.bind(this),
@@ -1353,6 +1367,8 @@
 
     const {
         getAnnotations,
+        updateTrackingData,
+        computeTrackingData,
         putAnnotations,
         saveAnnotations,
         hasUnsavedChanges,
@@ -1451,6 +1467,15 @@
         const annotationsData = await getAnnotations(this, frame, allTracks, filters);
         return annotationsData;
     };
+
+    Job.prototype.annotations.updateTrackingData.implementation = function(trackingData) {
+        updateTrackingData(this, trackingData);
+    }
+
+    Job.prototype.annotations.computeTrackingData.implementation = async function(args) {
+        const trackingData = await computeTrackingData(args);
+        return trackingData;
+    }
 
     Job.prototype.annotations.search.implementation = function (filters, frameFrom, frameTo) {
         if (!Array.isArray(filters) || filters.some((filter) => typeof (filter) !== 'string')) {
@@ -1705,6 +1730,15 @@
         const result = await getAnnotations(this, frame, allTracks, filters);
         return result;
     };
+
+    Task.prototype.annotations.updateTrackingData.implementation = function(trackingData) {
+        updateTrackingData(this, trackingData);
+    }
+
+    Task.prototype.annotations.computeTrackingData.implementation = async function(args) {
+        const trackingData = await computeTrackingData(args);
+        return trackingData;
+    }
 
     Task.prototype.annotations.search.implementation = function (filters, frameFrom, frameTo) {
         if (!Array.isArray(filters) || filters.some((filter) => typeof (filter) !== 'string')) {

@@ -696,7 +696,7 @@
         }
 
         // Method is used to construct ObjectState objects
-        get(frame) {
+        get(frame, trackingData) {
             const {
                 prev,
                 next,
@@ -705,7 +705,7 @@
             } = this.boundedKeyframes(frame);
 
             return {
-                ...this.getPosition(frame, prev, next),
+                ...this.getPosition(frame, prev, next, trackingData),
                 attributes: this.getAttributes(frame),
                 group: this.groupObject,
                 objectType: ObjectType.TRACK,
@@ -1967,6 +1967,83 @@
         }
     }
 
+    class PointsTrackWithTracking extends PointsTrack {
+        constructor(data, clientID, color, injection) {
+            super(data, clientID, color, injection);
+            this.shapeType = ObjectShape.POINTS;
+            this.pinned = false;
+            for (const shape of Object.values(this.shapes)) {
+                checkNumberOfPoints(this.shapeType, shape.points);
+            }
+        }
+
+        getPosition(targetFrame, leftKeyframe, rightFrame, trackingData) {
+            const leftFrame = targetFrame in this.shapes ? targetFrame : leftKeyframe;
+            const rightPosition = Number.isInteger(rightFrame) ? this.shapes[rightFrame] : null;
+            const leftPosition = Number.isInteger(leftFrame) ? this.shapes[leftFrame] : null;
+
+            const points = trackingData ? trackingData[targetFrame] : undefined;
+            const isKeyFrame = targetFrame in this.shapes;
+            const targetPositionPoints = isKeyFrame ? this.shapes[targetFrame].points : undefined;
+
+            if (targetPositionPoints) {
+                return {
+                    points: [...targetPositionPoints],
+                    occluded: leftPosition.occluded,
+                    outside: leftPosition.outside,
+                    zOrder: leftPosition.zOrder,
+                    keyframe: targetFrame in this.shapes,
+                }
+            }
+
+            if (points) {
+                return {
+                    points: [...points],
+                    occluded: leftPosition.occluded,
+                    outside: leftPosition.outside,
+                    zOrder: leftPosition.zOrder,
+                    keyframe: targetFrame in this.shapes,
+                }
+            }
+
+            if (leftPosition && rightPosition) {
+                return {
+                    ...this.interpolatePosition(
+                        leftPosition,
+                        rightPosition,
+                        (targetFrame - leftFrame) / (rightFrame - leftFrame),
+                    ),
+                    keyframe: targetFrame in this.shapes,
+                };
+            }
+
+            if (leftPosition) {
+                return {
+                    points: [...leftPosition.points],
+                    occluded: leftPosition.occluded,
+                    outside: leftPosition.outside,
+                    zOrder: leftPosition.zOrder,
+                    keyframe: targetFrame in this.shapes,
+                };
+            }
+
+            if (rightPosition) {
+                return {
+                    points: [...rightPosition.points],
+                    occluded: rightPosition.occluded,
+                    outside: true,
+                    zOrder: rightPosition.zOrder,
+                    keyframe: targetFrame in this.shapes,
+                };
+            }
+
+            throw new DataError(
+                'No one left position or right position was found. '
+                + `Interpolation impossible. Client ID: ${this.clientID}`,
+            );
+        }
+    }
+
     class CuboidTrack extends PolyTrack {
         constructor(data, clientID, color, injection) {
             super(data, clientID, color, injection);
@@ -1982,6 +2059,7 @@
     PolygonTrack.distance = PolygonShape.distance;
     PolylineTrack.distance = PolylineShape.distance;
     PointsTrack.distance = PointsShape.distance;
+    PointsTrackWithTracking.distance = PointsShape.distance;
     CuboidTrack.distance = CuboidShape.distance;
     CuboidTrack.interpolatePosition = RectangleTrack.interpolatePosition;
 
@@ -1995,6 +2073,7 @@
         PolygonTrack,
         PolylineTrack,
         PointsTrack,
+        PointsTrackWithTracking,
         CuboidTrack,
         Track,
         Shape,
