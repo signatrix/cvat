@@ -98,6 +98,21 @@
         return cache.get(session).collection.get(frame, allTracks, filters);
     }
 
+    function updateTrackingData(session, trackingData) {
+        const sessionType = session instanceof Task ? 'task' : 'job';
+        const cache = getCache(sessionType);
+
+        if (!cache.has(session)) {
+            return;
+        }
+
+        cache.get(session).collection.updateTrackingData(trackingData);
+    }
+
+    async function computeTrackingData(args) {
+        return serverProxy.annotations.getTracking(args);
+    }
+
     async function saveAnnotations(session, onUpdate) {
         const sessionType = session instanceof Task ? 'task' : 'job';
         const cache = getCache(sessionType);
@@ -355,6 +370,7 @@
 
     module.exports = {
         getAnnotations,
+        computeTrackingData,
         putAnnotations,
         saveAnnotations,
         hasUnsavedChanges,
@@ -369,6 +385,7 @@
         dumpAnnotations,
         importAnnotations,
         exportAnnotations,
+        updateTrackingData,
         exportDataset,
         undoActions,
         redoActions,

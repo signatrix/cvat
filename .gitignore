@@ -30,4 +30,8 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# Ignore goturn model
+goturn.caffemodel
+goturn.prototxt
+
 .DS_Store

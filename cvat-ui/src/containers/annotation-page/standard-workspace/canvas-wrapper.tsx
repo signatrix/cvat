@@ -27,6 +27,7 @@ import {
     addZLayer,
     switchZLayer,
     fetchAnnotationsAsync,
+    createAnnotationsAndGroupAsync,
 } from 'actions/annotation-actions';
 import {
     switchGrid,
@@ -119,6 +120,7 @@ interface DispatchToProps {
     onSwitchGrid(enabled: boolean): void;
     onSwitchAutomaticBordering(enabled: boolean): void;
     onFetchAnnotation(): void;
+    onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
 }
 
 function mapStateToProps(state: CombinedState): StateToProps {
@@ -267,6 +269,9 @@ function mapDispatchToProps(dispatch: any): DispatchToProps {
         },
         onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): void {
             dispatch(createAnnotationsAsync(sessionInstance, frame, states));
+        },
+        onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void> {
+            return dispatch(createAnnotationsAndGroupAsync(sessionInstance, frame, states));
         },
         onMergeAnnotations(sessionInstance: any, frame: number, states: any[]): void {
             dispatch(mergeAnnotationsAsync(sessionInstance, frame, states));

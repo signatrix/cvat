@@ -1265,6 +1265,85 @@ export function groupAnnotationsAsync(
     };
 }
 
+
+export function createAnnotationsAndGroupAsync(sessionInstance: any, frame: number, statesToCreate: any[]):
+ThunkAction<Promise<void>, {}, {}, AnyAction> {
+    return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {
+        try {
+            const { filters, showAllInterpolationTracks } = receiveAnnotationsParameters();
+            const idsToGroup = await sessionInstance.annotations.put(statesToCreate);
+            const states = await sessionInstance.annotations
+                .get(frame, showAllInterpolationTracks, filters);
+            const allStates = await sessionInstance.annotations.get(frame);
+            const history = await sessionInstance.actions.get();
+
+            const statesToGroup = allStates.filter((state: any) => idsToGroup.includes(state.clientID));
+
+            dispatch({
+                type: AnnotationActionTypes.CREATE_ANNOTATIONS_SUCCESS,
+                payload: {
+                    states,
+                    history,
+                },
+            });
+
+            dispatch(groupAnnotationsAsync(sessionInstance, frame, statesToGroup));
+        } catch (error) {
+            dispatch({
+                type: AnnotationActionTypes.CREATE_ANNOTATIONS_FAILED,
+                payload: {
+                    error,
+                },
+            });
+        }
+    };
+}
+
+export function trackAnnotationsAsync(sessionInstance: any, frame: number):
+    ThunkAction<Promise<void>, {}, {}, AnyAction> {
+    return async (dispatch): Promise<void> => {
+        const states: Array<{
+            shapeType: string,
+            objectType: string,
+            points: number[],
+            clientID: number,
+            serverID: number,
+            frame: number,
+        }> = await sessionInstance.annotations.get(frame)
+        const trackedPoints = states
+            .filter(({ shapeType, objectType }) =>
+                shapeType === 'points' && objectType === 'track')
+            .map(({ points, clientID, frame, }) => ({
+                points,
+                id: clientID, // confuse the request using clientID instead of serverID
+                frame,
+            }));
+
+        const { tracked_shapes: trackedShapes } = await sessionInstance.annotations.computeTrackingData({
+            job_id: sessionInstance.id,
+            shape_tracks: trackedPoints,
+            stop_frame: frame + 1,
+        });
+
+        const trackingData = trackedShapes.reduce((p: any, c: any) => {
+            const frames = p[c.id] || {};
+            frames[c.frame] = c.points;
+
+            p[c.id] = frames;
+            return p;
+        }, {});
+
+        console.log(
+            'trackingData',
+            trackingData,
+        )
+
+        sessionInstance.annotations.updateTrackingData(trackingData);
+
+        await dispatch(changeFrameAsync(frame + 1));
+    }
+}
+
 export function splitAnnotationsAsync(sessionInstance: any, frame: number, stateToSplit: any):
 ThunkAction<Promise<void>, {}, {}, AnyAction> {
     return async (dispatch: ActionCreator<Dispatch>): Promise<void> => {

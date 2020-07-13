@@ -18,6 +18,7 @@
         PolygonTrack,
         PolylineTrack,
         PointsTrack,
+        PointsTrackWithTracking,
         CuboidTrack,
         Track,
         Shape,
@@ -90,7 +91,7 @@
                 trackModel = new PolylineTrack(trackData, clientID, color, injection);
                 break;
             case 'points':
-                trackModel = new PointsTrack(trackData, clientID, color, injection);
+                trackModel = new PointsTrackWithTracking(trackData, clientID, color, injection);
                 break;
             case 'cuboid':
                 trackModel = new CuboidTrack(trackData, clientID, color, injection);
@@ -124,6 +125,7 @@
             this.shapes = {}; // key is a frame
             this.tags = {}; // key is a frame
             this.tracks = [];
+            this.trackingData = {};
             this.objects = {}; // key is a client id
             this.count = 0;
             this.flush = false;
@@ -137,6 +139,21 @@
                 history: this.history,
                 groupColors: {},
             };
+        }
+
+        updateTrackingData(tracking) {
+            this.trackingData = tracking;
+
+            const merge = key => {
+                const oldFrames = this.trackingData[key] || {};
+                const newFrames = tracking[key];
+
+                return {...oldFrames, ...newFrames};
+            };
+
+            for (const key in tracking) {
+                this.trackingData[key] = merge(key);
+            }
         }
 
         import(data) {
@@ -219,7 +236,7 @@
                     continue;
                 }
 
-                const stateData = object.get(frame);
+                const stateData = object.get(frame, this.trackingData ? this.trackingData[object.clientID] : {});
                 if (!allTracks && stateData.outside && !stateData.keyframe) {
                     continue;
                 }

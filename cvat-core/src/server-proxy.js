@@ -586,6 +586,26 @@
                 return response.data;
             }
 
+            async function getTracking(args) {
+                const { backendAPI, proxy } = config;
+                const { origin } = new URL(backendAPI);
+
+                const url = `${origin}/tracking/track-points`;
+                const data = JSON.stringify(args);
+
+                try {
+                    const response = await Axios.post(url, data, {
+                        proxy,
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                    });
+                    return response.data;
+                } catch (errorData) {
+                    throw generateError(errorData);
+                }
+            }
+
             // Session is 'task' or 'job'
             async function uploadAnnotations(session, id, file, format) {
                 const { backendAPI } = config;
@@ -721,6 +741,7 @@
                         getAnnotations,
                         dumpAnnotations,
                         uploadAnnotations,
+                        getTracking,
                     }),
                     writable: false,
                 },

@@ -717,12 +717,47 @@ export class DrawHandlerImpl implements DrawHandler {
                     this.drawCuboid();
                     this.shapeSizeElement = displayShapeSize(this.canvas, this.text);
                 }
+            } else if (this.drawData.shapeType === 'template') {
+                this.drawTemplate();
             }
             this.setupDrawEvents();
         }
 
         this.startTimestamp = Date.now();
         this.initialized = true;
+    }
+
+    public drawTemplate() {
+        this.drawInstance = this.canvas.rect();
+        this.shapeSizeElement = displayShapeSize(this.canvas, this.text);
+
+        this.drawInstance.on('drawstop', (e: Event): void => {
+            const bbox = (e.target as SVGRectElement).getBBox();
+            const [xtl, ytl, xbr, ybr] = this.getFinalRectCoordinates(bbox);
+            const { shapeType, template } = this.drawData;
+
+            const width = xbr - xtl;
+            const height = ybr - ytl;
+
+            this.release();
+
+            if (this.canceled) return;
+            if (width * height >= consts.AREA_THRESHOLD) {
+                const points = template.vertices
+                    .map(([x, y]) => [width * x + xtl, height * y + ytl]);
+
+                this.onDrawDone({
+                    shapeType,
+                    points,
+                    edges: template.edges,
+                    labels: template.labels,
+                }, Date.now() - this.startTimestamp);
+            }
+        }).on('drawupdate', (): void => {
+            this.shapeSizeElement.update(this.drawInstance);
+        }).addClass('cvat_canvas_shape_drawing').attr({
+            'stroke-width': consts.BASE_STROKE_WIDTH / this.geometry.scale,
+        });
     }
 
     public constructor(

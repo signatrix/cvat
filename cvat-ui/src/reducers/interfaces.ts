@@ -282,6 +282,8 @@ export enum ActiveControl {
     GROUP = 'group',
     SPLIT = 'split',
     EDIT = 'edit',
+
+    DRAW_TEMPLATE = 'template'
 }
 
 export enum ShapeType {
@@ -290,6 +292,7 @@ export enum ShapeType {
     POLYLINE = 'polyline',
     POINTS = 'points',
     CUBOID = 'cuboid',
+    TEMPLATE = 'template',
 }
 
 export enum ObjectType {

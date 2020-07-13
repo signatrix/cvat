@@ -100,6 +100,8 @@ INSTALLED_APPS = [
     'cvat.apps.engine',
     'cvat.apps.git',
     'cvat.apps.restrictions',
+    'cvat.apps.annotation',
+    'cvat.apps.tracking',
     'django_rq',
     'compressor',
     'cacheops',
@@ -179,6 +181,12 @@ if os.getenv('DJANGO_LOG_VIEWER_HOST'):
 # new feature by Mohammad
 if 'yes' == os.environ.get('AUTO_SEGMENTATION', 'no'):
     INSTALLED_APPS += ['cvat.apps.auto_segmentation']
+
+# Enable (shape) tracking if environment variable TRACKING is set to yes
+if 'yes' == os.environ.get('TRACKING', 'no'):
+    INSTALLED_APPS += ['cvat.apps.tracking']
+
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

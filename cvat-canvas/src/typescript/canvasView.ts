@@ -1371,8 +1371,10 @@ export class CanvasViewImpl implements CanvasView, Listener {
                 } else if (state.shapeType === 'cuboid') {
                     this.svgShapes[state.clientID] = this
                         .addCuboid(stringified, state);
+                } else if (state.shapeType === 'template') {
+                    this.svgShapes[state.clientID] = this.addGraph(translatedPoints, state);
                 } else {
-                    continue;
+                	continue;                    continue;
                 }
             }
 
@@ -1846,6 +1848,22 @@ export class CanvasViewImpl implements CanvasView, Listener {
         }
 
         return cube;
+    }
+
+    private addGraph(points: number[], state: any): any {
+        const { edges = [] } = state;
+        const graph = (this.adoptedContent as any).group();
+
+        const points2D = points.reduce((p, c) => {
+            const last = p[p.length - 1]
+
+            return last === undefined || last.length == 2
+                ? p.concat([[c]])
+                : p.slice(0, -1).concat([last.concat(c)]);
+        }
+        , [] as number[][]);
+
+        return graph;
     }
 
     private setupPoints(basicPolyline: SVG.PolyLine, state: any): any {
