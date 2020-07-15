@@ -53,8 +53,6 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
     const {
         canvasInstance,
         activeControl,
-        normalizedKeyMap,
-        keyMap,
         mergeObjects,
         groupObjects,
         splitTrack,
