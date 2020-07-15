@@ -5,6 +5,7 @@
 import React from 'react';
 import { GlobalHotKeys, ExtendedKeyMapOptions } from 'react-hotkeys';
 import Layout from 'antd/lib/layout';
+import { Button } from 'antd';
 
 import { ActiveControl, Rotation } from 'reducers/interfaces';
 import { Canvas } from 'cvat-canvas-wrapper';
@@ -24,16 +25,15 @@ import MergeControl from './merge-control';
 import GroupControl from './group-control';
 import SplitControl from './split-control';
 import TemplateControl from './template-control';
-import { Button } from 'antd';
 
 interface Props {
     canvasInstance: Canvas;
     activeControl: ActiveControl;
     keyMap: Record<string, ExtendedKeyMapOptions>;
     normalizedKeyMap: Record<string, string>;
-    jobInstance: any,
-    frame: number,
-    labels: any[],
+    jobInstance: any;
+    frame: number;
+    labels: any[];
 
     mergeObjects(enabled: boolean): void;
     groupObjects(enabled: boolean): void;
@@ -66,8 +66,6 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         jobInstance,
         labels,
         frame,
-        onCreateAnnotations,
-        onGroupAnnotations,
         onCreateAnnotationsAndGrouping,
         onTrackAnnotation,
         redrawShape,
