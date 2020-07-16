@@ -147,11 +147,6 @@
         updateTrackingData(tracking) {
             this.trackingData = this.trackingData || {};
 
-            console.log(
-                'trackingData [before]:',
-                this.trackingData,
-            );
-
             const merge = (key) => {
                 const oldFrames = this.trackingData[key] || {};
                 const newFrames = tracking[key];
@@ -170,11 +165,6 @@
                     obj.updateTracking(this.trackingData[key]);
                 }
             }
-
-            console.log(
-                'trackingData [after]:',
-                this.trackingData,
-            );
         }
 
         import(data) {
