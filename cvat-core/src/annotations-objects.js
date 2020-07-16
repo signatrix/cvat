@@ -1921,15 +1921,6 @@
             const isKeyFrame = targetFrame in this.shapes;
             const targetPositionPoints = isKeyFrame ? this.shapes[targetFrame].points : undefined;
 
-            console.log(
-                'getPosition',
-                '\n\ttargetFrame', targetFrame,
-                '\n\tleftKeyframe', leftKeyframe,
-                '\n\trightFrame', rightFrame,
-                '\n\ttrackingPoints:', trackingPoints,
-                '\n\ttargetPositionPoints:', targetPositionPoints,
-            );
-
             if (targetPositionPoints) {
                 return {
                     points: [...targetPositionPoints],
