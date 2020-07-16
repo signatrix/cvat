@@ -142,18 +142,36 @@
         }
 
         updateTrackingData(tracking) {
-            this.trackingData = tracking;
+            this.trackingData = this.trackingData || {};
 
-            const merge = key => {
+            console.log(
+                'trackingData [before]:',
+                this.trackingData,
+            );
+
+            const merge = (key) => {
                 const oldFrames = this.trackingData[key] || {};
                 const newFrames = tracking[key];
 
-                return {...oldFrames, ...newFrames};
+                return { ...oldFrames, ...newFrames };
             };
 
             for (const key in tracking) {
+                if (!tracking.hasOwnProperty(key)) continue;
+
                 this.trackingData[key] = merge(key);
+
+                const obj = this.objects[key];
+
+                if (obj !== undefined && 'updateTraking' in obj) {
+                    obj.updateTracking(this.trackingData[key]);
+                }
             }
+
+            console.log(
+                'trackingData [after]:',
+                this.trackingData,
+            );
         }
 
         import(data) {
