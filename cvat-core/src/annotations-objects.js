@@ -1916,9 +1916,18 @@
             const rightPosition = Number.isInteger(rightFrame) ? this.shapes[rightFrame] : null;
             const leftPosition = Number.isInteger(leftFrame) ? this.shapes[leftFrame] : null;
 
-            const points = trackingData ? trackingData[targetFrame] : undefined;
+            const trackingPoints = this.trackingData[targetFrame];
             const isKeyFrame = targetFrame in this.shapes;
             const targetPositionPoints = isKeyFrame ? this.shapes[targetFrame].points : undefined;
+
+            console.log(
+                'getPosition',
+                '\n\ttargetFrame', targetFrame,
+                '\n\tleftKeyframe', leftKeyframe,
+                '\n\trightFrame', rightFrame,
+                '\n\ttrackingPoints:', trackingPoints,
+                '\n\ttargetPositionPoints:', targetPositionPoints,
+            );
 
             if (targetPositionPoints) {
                 return {
@@ -1926,18 +1935,39 @@
                     occluded: leftPosition.occluded,
                     outside: leftPosition.outside,
                     zOrder: leftPosition.zOrder,
-                    keyframe: targetFrame in this.shapes,
-                }
+                    keyframe: isKeyFrame,
+                };
             }
 
-            if (points) {
-                return {
-                    points: [...points],
-                    occluded: leftPosition.occluded,
-                    outside: leftPosition.outside,
+            if (trackingPoints !== undefined) {
+                const labelAttributes = this.label.attributes.reduce((accumulator, attribute) => {
+                    accumulator[attribute.id] = attribute;
+                    return accumulator;
+                }, {});
+
+                const shape = {
+                    type: this.shapeType,
                     zOrder: leftPosition.zOrder,
-                    keyframe: targetFrame in this.shapes,
-                }
+                    points: [...trackingPoints],
+                    outside: leftPosition.outside,
+                    occluded: leftPosition.occluded,
+                    attributes: Object.keys(leftPosition.attributes)
+                        .reduce((attributeAccumulator, attrId) => {
+                            if (labelAttributes[attrId].mutable) {
+                                attributeAccumulator.push({
+                                    spec_id: attrId,
+                                    value: leftPosition.attributes[attrId],
+                                });
+                            }
+
+                            return attributeAccumulator;
+                        }, []),
+                    frame: targetFrame,
+                };
+
+                this.shapes[targetFrame] = shape;
+
+                return shape;
             }
 
             if (leftPosition && rightPosition) {
@@ -1947,7 +1977,7 @@
                         rightPosition,
                         (targetFrame - leftFrame) / (rightFrame - leftFrame),
                     ),
-                    keyframe: targetFrame in this.shapes,
+                    keyframe: isKeyFrame,
                 };
             }
 
@@ -1957,7 +1987,7 @@
                     occluded: leftPosition.occluded,
                     outside: leftPosition.outside,
                     zOrder: leftPosition.zOrder,
-                    keyframe: targetFrame in this.shapes,
+                    keyframe: isKeyFrame,
                 };
             }
 
@@ -1967,7 +1997,7 @@
                     occluded: rightPosition.occluded,
                     outside: true,
                     zOrder: rightPosition.zOrder,
-                    keyframe: targetFrame in this.shapes,
+                    keyframe: isKeyFrame,
                 };
             }
 
