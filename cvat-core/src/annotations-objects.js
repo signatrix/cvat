@@ -1902,6 +1902,7 @@
             super(data, clientID, color, injection);
             this.shapeType = ObjectShape.POINTS;
             this.pinned = false;
+            this.trackingData = {};
             for (const shape of Object.values(this.shapes)) {
                 checkNumberOfPoints(this.shapeType, shape.points);
             }
