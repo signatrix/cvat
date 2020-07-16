@@ -166,7 +166,7 @@
 
                 const obj = this.objects[key];
 
-                if (obj !== undefined && 'updateTraking' in obj) {
+                if (obj !== undefined && 'updateTracking' in obj) {
                     obj.updateTracking(this.trackingData[key]);
                 }
             }
