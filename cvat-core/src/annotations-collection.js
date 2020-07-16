@@ -254,7 +254,7 @@
                     continue;
                 }
 
-                const stateData = object.get(frame, this.trackingData ? this.trackingData[object.clientID] : {});
+                const stateData = object.get(frame);
                 if (!allTracks && stateData.outside && !stateData.keyframe) {
                     continue;
                 }
