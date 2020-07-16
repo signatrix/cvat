@@ -1907,7 +1907,11 @@
             }
         }
 
-        getPosition(targetFrame, leftKeyframe, rightFrame, trackingData) {
+        updateTracking(trackingData) {
+            this.trackingData = { ...this.trackingData, ...trackingData };
+        }
+
+        getPosition(targetFrame, leftKeyframe, rightFrame) {
             const leftFrame = targetFrame in this.shapes ? targetFrame : leftKeyframe;
             const rightPosition = Number.isInteger(rightFrame) ? this.shapes[rightFrame] : null;
             const leftPosition = Number.isInteger(leftFrame) ? this.shapes[leftFrame] : null;
