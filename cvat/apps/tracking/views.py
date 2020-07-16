@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view
 from rules.contrib.views import permission_required
 
 from cvat.apps.authentication.decorators import login_required
-from cvat.apps.engine.data_manager import TrackManager
+from cvat.apps.dataset_manager.annotation import TrackManager
 from cvat.apps.engine.models import (Job, TrackedShape)
 from cvat.apps.engine.serializers import (TrackedShapeSerializer)
 from .tracker import RectangleTracker, PointsTracker
