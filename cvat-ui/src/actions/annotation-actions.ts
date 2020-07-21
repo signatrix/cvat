@@ -1317,7 +1317,7 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
                 points,
                 id: clientID, // confuse the request using clientID instead of serverID
                 frame,
-                shape_type: shapeType
+                type: shapeType,
             }));
 
         const { tracked_shapes: trackedShapes } = await sessionInstance.annotations.computeTrackingData({
