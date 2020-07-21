@@ -5,7 +5,7 @@ from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
 from cvat.apps.engine.models import Task
-from cvat.apps.engine.annotation import delete_task_data
+from cvat.apps.dataset_manager.task import delete_task_data
 
 from .export_annotation import dump_annotation_for_task
 
