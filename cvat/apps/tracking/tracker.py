@@ -89,7 +89,7 @@ class RectangleTracker:
 
         self._tracker_type = trackerType
 
-    def track_rectangles(self, task, start_shape, stop_frame):
+    def track_rectangles(self, task, start_shapes, stop_frame):
         # Only track in to future.
         start_frame = start_shapes[0].frame
         if stop_frame < start_frame:
