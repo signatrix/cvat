@@ -1558,6 +1558,7 @@
             for (const shape of Object.values(this.shapes)) {
                 checkNumberOfPoints(this.shapeType, shape.points);
             }
+            this.trackingData = {};
         }
 
         updateTracking(trackingData) {
