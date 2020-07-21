@@ -1309,14 +1309,15 @@ export function trackAnnotationsAsync(sessionInstance: any, frame: number):
             clientID: number,
             serverID: number,
             frame: number,
-        }> = await sessionInstance.annotations.get(frame)
+        }> = await sessionInstance.annotations.get(frame);
         const trackedPoints = states
             .filter(({ shapeType, objectType }) =>
-                shapeType === 'points' && objectType === 'track')
-            .map(({ points, clientID, frame, }) => ({
+                (shapeType === 'points' || shapeType === 'rectangle') && objectType === 'track')
+            .map(({ points, clientID, frame, shapeType }) => ({
                 points,
                 id: clientID, // confuse the request using clientID instead of serverID
                 frame,
+                shapeType
             }));
 
         const { tracked_shapes: trackedShapes } = await sessionInstance.annotations.computeTrackingData({
