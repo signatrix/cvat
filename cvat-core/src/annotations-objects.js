@@ -2142,6 +2142,7 @@
         PointsShape,
         CuboidShape,
         RectangleTrack,
+        RectangleTrackWithTracking,
         PolygonTrack,
         PolylineTrack,
         PointsTrack,
