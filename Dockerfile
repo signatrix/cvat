@@ -48,6 +48,7 @@ RUN apt-get update && \
         pkg-config \
         python3-dev \
         python3-pip \
+        libsm6 libxext6 libxrender-dev \
         tzdata \
         p7zip-full \
         git \
