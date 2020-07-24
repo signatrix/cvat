@@ -160,9 +160,6 @@ COPY datumaro/ ${HOME}/datumaro
 
 RUN python3 -m pip install --no-cache-dir -r ${HOME}/datumaro/requirements.txt
 
-RUN python3 -m pip uninstall opencv-python opencv-contrib-python-headless && \
-    python3 -m pip install opencv-contrib-python-headless
-
 # Binary option is necessary to correctly apply the patch on Windows platform.
 # https://unix.stackexchange.com/questions/239364/how-to-fix-hunk-1-failed-at-1-different-line-endings-message
 RUN patch --binary -p1 < ${HOME}/cvat/apps/engine/static/engine/js/3rdparty.patch
