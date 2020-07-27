@@ -17,7 +17,7 @@
     const {
         Loader,
         Dumper,
-    } = require('./annotation-format.js');
+    } = require('./annotation-formats.js');
     const {
         ScriptingError,
         DataError,
@@ -74,6 +74,15 @@
                 saver,
                 history,
             });
+        }
+    }
+
+    async function closeSession(session) {
+        const sessionType = session instanceof Task ? 'task' : 'job';
+        const cache = getCache(sessionType);
+
+        if (cache.has(session)) {
+            cache.delete(session);
         }
     }
 
@@ -382,5 +391,6 @@
         redoActions,
         clearActions,
         getActions,
+        closeSession,
     };
 })();

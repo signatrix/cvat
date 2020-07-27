@@ -154,23 +154,23 @@
                 return response.data;
             }
 
-            async function datasetFormats() {
-                const { backendAPI } = config;
 
+            async function userAgreements() {
+                const { backendAPI } = config;
                 let response = null;
                 try {
-                    response = await Axios.get(`${backendAPI}/server/dataset/formats`, {
+                    response = await Axios.get(`${backendAPI}/restrictions/user-agreements`, {
                         proxy: config.proxy,
                     });
-                    response = JSON.parse(response.data);
+
                 } catch (errorData) {
                     throw generateError(errorData);
                 }
 
-                return response;
+                return response.data;
             }
 
-            async function register(username, firstName, lastName, email, password1, password2) {
+            async function register(username, firstName, lastName, email, password1, password2, confirmations) {
                 let response = null;
                 try {
                     const data = JSON.stringify({
@@ -180,6 +180,7 @@
                         email,
                         password1,
                         password2,
+                        confirmations,
                     });
                     response = await Axios.post(`${config.backendAPI}/auth/register`, data, {
                         proxy: config.proxy,
@@ -587,7 +588,10 @@
 
             async function getTracking(args) {
                 const { backendAPI, proxy } = config;
-                const { origin } = new URL(backendAPI);
+
+                const origin = backendAPI.startsWith('/')
+                    ? ''
+                    : new URL(backendAPI).origin;
 
                 const url = `${origin}/tracking/track-points`;
                 const data = JSON.stringify(args);
@@ -637,9 +641,12 @@
             // Session is 'task' or 'job'
             async function dumpAnnotations(id, name, format) {
                 const { backendAPI } = config;
-                const filename = name.replace(/\//g, '_');
-                const baseURL = `${backendAPI}/tasks/${id}/annotations/${encodeURIComponent(filename)}`;
+                const baseURL = `${backendAPI}/tasks/${id}/annotations`;
                 let query = `format=${encodeURIComponent(format)}`;
+                if (name) {
+                    const filename = name.replace(/\//g, '_');
+                    query += `&filename=${encodeURIComponent(filename)}`;
+                }
                 let url = `${baseURL}?${query}`;
 
                 return new Promise((resolve, reject) => {
@@ -684,13 +691,13 @@
                         about,
                         share,
                         formats,
-                        datasetFormats,
                         exception,
                         login,
                         logout,
                         authorized,
                         register,
                         request: serverRequest,
+                        userAgreements,
                     }),
                     writable: false,
                 },

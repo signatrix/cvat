@@ -5,6 +5,7 @@
 import React from 'react';
 import { GlobalHotKeys, ExtendedKeyMapOptions } from 'react-hotkeys';
 import Layout from 'antd/lib/layout';
+import { Button } from 'antd';
 
 import { ActiveControl, Rotation } from 'reducers/interfaces';
 import { Canvas } from 'cvat-canvas-wrapper';
@@ -24,16 +25,15 @@ import MergeControl from './merge-control';
 import GroupControl from './group-control';
 import SplitControl from './split-control';
 import TemplateControl from './template-control';
-import { Button } from 'antd';
 
 interface Props {
     canvasInstance: Canvas;
     activeControl: ActiveControl;
     keyMap: Record<string, ExtendedKeyMapOptions>;
     normalizedKeyMap: Record<string, string>;
-    jobInstance: any,
-    frame: number,
-    labels: any[],
+    jobInstance: any;
+    frame: number;
+    labels: any[];
 
     mergeObjects(enabled: boolean): void;
     groupObjects(enabled: boolean): void;
@@ -42,6 +42,7 @@ interface Props {
     repeatDrawShape(): void;
     pasteShape(): void;
     resetGroup(): void;
+    redrawShape(): void;
     onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
@@ -52,7 +53,6 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
     const {
         canvasInstance,
         activeControl,
-
         mergeObjects,
         groupObjects,
         splitTrack,
@@ -60,14 +60,13 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         repeatDrawShape,
         pasteShape,
         resetGroup,
+        redrawShape,
         normalizedKeyMap,
         keyMap,
 
         jobInstance,
         labels,
         frame,
-        onCreateAnnotations,
-        onGroupAnnotations,
         onCreateAnnotationsAndGrouping,
         onTrackAnnotation,
     } = props;
@@ -82,6 +81,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         PASTE_SHAPE: keyMap.PASTE_SHAPE,
         SWITCH_DRAW_MODE: keyMap.SWITCH_DRAW_MODE,
         SWITCH_MERGE_MODE: keyMap.SWITCH_MERGE_MODE,
+        SWITCH_SPLIT_MODE: keyMap.SWITCH_SPLIT_MODE,
         SWITCH_GROUP_MODE: keyMap.SWITCH_GROUP_MODE,
         RESET_GROUP: keyMap.RESET_GROUP,
         CANCEL: keyMap.CANCEL,
@@ -105,7 +105,12 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
                 canvasInstance.cancel();
                 // repeateDrawShapes gets all the latest parameters
                 // and calls canvasInstance.draw() with them
-                repeatDrawShape();
+
+                if (event && event.shiftKey) {
+                    redrawShape();
+                } else {
+                    repeatDrawShape();
+                }
             } else {
                 canvasInstance.draw({ enabled: false });
             }
@@ -118,6 +123,15 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
             }
             canvasInstance.merge({ enabled: !merging });
             mergeObjects(!merging);
+        },
+        SWITCH_SPLIT_MODE: (event: KeyboardEvent | undefined) => {
+            preventDefault(event);
+            const splitting = activeControl === ActiveControl.SPLIT;
+            if (!splitting) {
+                canvasInstance.cancel();
+            }
+            canvasInstance.split({ enabled: !splitting });
+            splitTrack(!splitting);
         },
         SWITCH_GROUP_MODE: (event: KeyboardEvent | undefined) => {
             preventDefault(event);
@@ -235,6 +249,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
             />
             <SplitControl
                 canvasInstance={canvasInstance}
+                switchSplitShortcut={normalizedKeyMap.SWITCH_SPLIT_MODE}
                 activeControl={activeControl}
                 splitTrack={splitTrack}
             />

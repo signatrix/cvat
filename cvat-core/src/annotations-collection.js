@@ -142,17 +142,25 @@
         }
 
         updateTrackingData(tracking) {
-            this.trackingData = tracking;
+            this.trackingData = this.trackingData || {};
 
-            const merge = key => {
+            const merge = (key) => {
                 const oldFrames = this.trackingData[key] || {};
                 const newFrames = tracking[key];
 
-                return {...oldFrames, ...newFrames};
+                return { ...oldFrames, ...newFrames };
             };
 
             for (const key in tracking) {
+                if (!tracking.hasOwnProperty(key)) continue;
+
                 this.trackingData[key] = merge(key);
+
+                const obj = this.objects[key];
+
+                if (obj !== undefined && 'updateTracking' in obj) {
+                    obj.updateTracking(this.trackingData[key]);
+                }
             }
         }
 
@@ -236,7 +244,7 @@
                     continue;
                 }
 
-                const stateData = object.get(frame, this.trackingData ? this.trackingData[object.clientID] : {});
+                const stateData = object.get(frame);
                 if (!allTracks && stateData.outside && !stateData.keyframe) {
                     continue;
                 }
@@ -814,15 +822,17 @@
                 .concat(imported.tracks)
                 .concat(imported.shapes);
 
-            this.history.do(HistoryActions.CREATED_OBJECTS, () => {
-                importedArray.forEach((object) => {
-                    object.removed = true;
-                });
-            }, () => {
-                importedArray.forEach((object) => {
-                    object.removed = false;
-                });
-            }, importedArray.map((object) => object.clientID), objectStates[0].frame);
+            if (objectStates.length) {
+                this.history.do(HistoryActions.CREATED_OBJECTS, () => {
+                    importedArray.forEach((object) => {
+                        object.removed = true;
+                    });
+                }, () => {
+                    importedArray.forEach((object) => {
+                        object.removed = false;
+                    });
+                }, importedArray.map((object) => object.clientID), objectStates[0].frame);
+            }
 
             return importedArray.map((value) => value.clientID);
         }

@@ -12,7 +12,9 @@ import { SelectValue } from 'antd/lib/select';
 import { CheckboxChangeEvent } from 'antd/lib/checkbox';
 import { Row, Col } from 'antd/lib/grid';
 import Text from 'antd/lib/typography/Text';
+import Icon from 'antd/lib/icon';
 
+import { Canvas } from 'cvat-canvas-wrapper';
 import { LogType } from 'cvat-logger';
 import {
     activateObject as activateObjectAction,
@@ -34,6 +36,8 @@ interface StateToProps {
     jobInstance: any;
     keyMap: Record<string, ExtendedKeyMapOptions>;
     normalizedKeyMap: Record<string, string>;
+    canvasInstance: Canvas;
+    canvasIsReady: boolean;
 }
 
 interface DispatchToProps {
@@ -57,6 +61,10 @@ function mapStateToProps(state: CombinedState): StateToProps {
                 instance: jobInstance,
                 labels,
             },
+            canvas: {
+                instance: canvasInstance,
+                ready: canvasIsReady,
+            },
         },
         shortcuts: {
             keyMap,
@@ -72,6 +80,8 @@ function mapStateToProps(state: CombinedState): StateToProps {
         states,
         keyMap,
         normalizedKeyMap,
+        canvasInstance,
+        canvasIsReady,
     };
 }
 
@@ -97,6 +107,8 @@ function AttributeAnnotationSidebar(props: StateToProps & DispatchToProps): JSX.
         activateObject,
         keyMap,
         normalizedKeyMap,
+        canvasInstance,
+        canvasIsReady,
     } = props;
 
     const [labelAttrMap, setLabelAttrMap] = useState(
@@ -106,6 +118,21 @@ function AttributeAnnotationSidebar(props: StateToProps & DispatchToProps): JSX.
         }, {}),
     );
 
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+    const collapse = (): void => {
+        const [collapser] = window.document
+            .getElementsByClassName('attribute-annotation-sidebar');
+
+        if (collapser) {
+            collapser.addEventListener('transitionend', () => {
+                canvasInstance.fitCanvas();
+            }, { once: true });
+        }
+
+        setSidebarCollapsed(!sidebarCollapsed);
+    };
+
     const [activeObjectState] = activatedStateID === null
         ? [null] : states.filter((objectState: any): boolean => (
             objectState.clientID === activatedStateID
@@ -114,14 +141,16 @@ function AttributeAnnotationSidebar(props: StateToProps & DispatchToProps): JSX.
         ? labelAttrMap[activeObjectState.label.id]
         : null;
 
-    if (activeObjectState) {
-        const attribute = labelAttrMap[activeObjectState.label.id];
-        if (attribute && attribute.id !== activatedAttributeID) {
-            activateObject(activatedStateID, attribute ? attribute.id : null);
+    if (canvasIsReady) {
+        if (activeObjectState) {
+            const attribute = labelAttrMap[activeObjectState.label.id];
+            if (attribute && attribute.id !== activatedAttributeID) {
+                activateObject(activatedStateID, attribute ? attribute.id : null);
+            }
+        } else if (states.length) {
+            const attribute = labelAttrMap[states[0].label.id];
+            activateObject(states[0].clientID, attribute ? attribute.id : null);
         }
-    } else if (states.length) {
-        const attribute = labelAttrMap[states[0].label.id];
-        activateObject(states[0].clientID, attribute ? attribute.id : null);
     }
 
     const nextObject = (step: number): void => {
@@ -175,6 +204,7 @@ function AttributeAnnotationSidebar(props: StateToProps & DispatchToProps): JSX.
         reverseArrow: true,
         collapsible: true,
         trigger: null,
+        collapsed: sidebarCollapsed,
     };
 
     const subKeyMap = {
@@ -218,8 +248,18 @@ function AttributeAnnotationSidebar(props: StateToProps & DispatchToProps): JSX.
     if (activeObjectState) {
         return (
             <Layout.Sider {...siderProps}>
+                {/* eslint-disable-next-line */}
+                <span
+                    className={`cvat-objects-sidebar-sider
+                        ant-layout-sider-zero-width-trigger
+                        ant-layout-sider-zero-width-trigger-left`}
+                    onClick={collapse}
+                >
+                    {sidebarCollapsed ? <Icon type='menu-fold' title='Show' />
+                        : <Icon type='menu-unfold' title='Hide' />}
+                </span>
                 <GlobalHotKeys keyMap={subKeyMap} handlers={handlers} allowChanges />
-                <Row>
+                <Row className='cvat-objects-sidebar-filter-input'>
                     <Col>
                         <AnnotationsFiltersInput />
                     </Col>

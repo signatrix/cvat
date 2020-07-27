@@ -53,7 +53,7 @@ setuptools.setup(
         'lxml',
         'matplotlib',
         'numpy',
-        'opencv-python',
+        'opencv-python-contrib',
         'Pillow',
         'pycocotools',
         'PyYAML',

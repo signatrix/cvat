@@ -1,10 +1,14 @@
+# Copyright (C) 2020 Intel Corporation
+#
 # SPDX-License-Identifier: MIT
+
 import json
 import logging
 import os
 import requests
 from io import BytesIO
 import mimetypes
+from time import sleep
 
 from PIL import Image
 
@@ -14,9 +18,10 @@ log = logging.getLogger(__name__)
 
 class CLI():
 
-    def __init__(self, session, api):
+    def __init__(self, session, api, credentials):
         self.api = api
         self.session = session
+        self.login(credentials)
 
     def tasks_data(self, task_id, resource_type, resources):
         """ Add local, remote, or shared files to an existing task. """
@@ -53,7 +58,9 @@ class CLI():
             response = self.session.get(url)
             response.raise_for_status()
 
-    def tasks_create(self, name, labels, bug, resource_type, resources, **kwargs):
+    def tasks_create(self, name, labels, bug, resource_type, resources,
+                     annotation_path='', annotation_format='CVAT XML 1.1',
+                     completion_verification_period=20, **kwargs):
         """ Create a new task with the given name and labels JSON and
         add the files to it. """
         url = self.api.tasks
@@ -65,7 +72,26 @@ class CLI():
         response.raise_for_status()
         response_json = response.json()
         log.info('Created task ID: {id} NAME: {name}'.format(**response_json))
-        self.tasks_data(response_json['id'], resource_type, resources)
+        task_id = response_json['id']
+        self.tasks_data(task_id, resource_type, resources)
+
+        if annotation_path != '':
+            url = self.api.tasks_id_status(task_id)
+            response = self.session.get(url)
+            response_json = response.json()
+
+            log.info('Awaiting data compression before uploading annotations...')
+            while response_json['state'] != 'Finished':
+                sleep(completion_verification_period)
+                response = self.session.get(url)
+                response_json = response.json()
+                logger_string= '''Awaiting compression for task {}.
+                            Status={}, Message={}'''.format(task_id,
+                                                            response_json['state'],
+                                                            response_json['message'])
+                log.info(logger_string)
+
+            self.tasks_upload(task_id, annotation_format, annotation_path, **kwargs)
 
     def tasks_delete(self, task_ids, **kwargs):
         """ Delete a list of tasks, ignoring those which don't exist. """
@@ -131,8 +157,8 @@ class CLI():
         while True:
             response = self.session.put(
                 url,
-                files={'annotation_file':open(filename, 'rb')}
-                )
+                files={'annotation_file': open(filename, 'rb')}
+            )
             response.raise_for_status()
             if response.status_code == 201:
                 break
@@ -141,12 +167,20 @@ class CLI():
             "with annotation file {} finished".format(filename)
         log.info(logger_string)
 
+    def login(self, credentials):
+        url = self.api.login
+        auth = {'username': credentials[0], 'password': credentials[1]}
+        response = self.session.post(url, auth)
+        response.raise_for_status()
+        if 'csrftoken' in response.cookies:
+            self.session.headers['X-CSRFToken'] = response.cookies['csrftoken']
+
 
 class CVAT_API_V1():
     """ Build parameterized API URLs """
 
-    def __init__(self, host, port):
-        self.base = 'http://{}:{}/api/v1/'.format(host, port)
+    def __init__(self, host):
+        self.base = 'http://{}/api/v1/'.format(host)
 
     @property
     def tasks(self):
@@ -164,10 +198,17 @@ class CVAT_API_V1():
     def tasks_id_frame_id(self, task_id, frame_id, quality):
         return self.tasks_id(task_id) + '/data?type=frame&number={}&quality={}'.format(frame_id, quality)
 
+    def tasks_id_status(self, task_id):
+        return self.tasks_id(task_id) + '/status'
+
     def tasks_id_annotations_format(self, task_id, fileformat):
         return self.tasks_id(task_id) + '/annotations?format={}' \
             .format(fileformat)
 
     def tasks_id_annotations_filename(self, task_id, name, fileformat):
-        return self.tasks_id(task_id) + '/annotations/{}?format={}' \
-            .format(name, fileformat)
+        return self.tasks_id(task_id) + '/annotations?format={}&filename={}' \
+            .format(fileformat, name)
+
+    @property
+    def login(self):
+        return self.base + 'auth/login'

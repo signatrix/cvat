@@ -1,13 +1,8 @@
 import functools
 import re
-import os.path
-from django.conf import settings
 from django.core.management.base import BaseCommand
-from django.contrib.auth.models import User
 from xml.dom import minidom
 
-from cvat.apps.engine.models import Task
-from cvat.apps.engine.annotation import TaskAnnotation
 from cvat.apps.engine.task import get_image_meta_cache
 
 

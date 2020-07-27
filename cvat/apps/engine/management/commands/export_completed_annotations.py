@@ -1,12 +1,11 @@
 import os
 import shutil
 from datetime import datetime
-from django.db.models import Q
 from django.contrib.auth.models import User
 from django.core.management.base import BaseCommand
 
 from cvat.apps.engine.models import Task
-from cvat.apps.engine.annotation import delete_task_data
+from cvat.apps.dataset_manager.task import delete_task_data
 
 from .export_annotation import dump_annotation_for_task
 
@@ -29,7 +28,11 @@ class Command(BaseCommand):
             options['dump_folder'] = os.path.join("/home/django/share/out/", datetime.now().strftime("%Y_%m_%d"))
         verbose = options['verbose']
         exported_tasks = []
-        for task in Task.objects.filter(status='completed', owner__isnull=False, assignee__isnull=False):
+        for task in Task.objects.filter(status='completed', owner__isnull=False):
+            if task.assignee is None:
+                if verbose:
+                    print('Task ' + task.name + 'does not have an assignee, skipping...')
+                continue
             try:
                 dump_annotations(task, options['dump_folder'], overwrite=options['overwrite'])
                 exported_tasks.append(task)
@@ -52,6 +55,8 @@ class Command(BaseCommand):
             else:
                 if verbose:
                     print('\nNo tasks were deleted. Make sure you will not export them multiple times to red in the future.')
+        else:
+            shutil.rmtree(options['dump_folder'], ignore_errors=True)
 
 
 def dump_annotations(task, dump_folder, overwrite=False):
@@ -70,6 +75,7 @@ def dump_annotations(task, dump_folder, overwrite=False):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
     dump_annotation_for_task(task, output_folder, overwrite=overwrite)
+
 
 def delete_task(task):
     try:

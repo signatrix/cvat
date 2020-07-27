@@ -1,4 +1,4 @@
-# Copyright (C) 2018-2019 Intel Corporation
+# Copyright (C) 2018-2020 Intel Corporation
 #
 # SPDX-License-Identifier: MIT
 
@@ -17,8 +17,9 @@ from cvat.apps.engine.log import slogger
 from cvat.apps.engine.models import Task as TaskModel
 from cvat.apps.authentication.auth import has_admin_role
 from cvat.apps.engine.serializers import LabeledDataSerializer
-from cvat.apps.engine.annotation import put_task_data, patch_task_data
+from cvat.apps.dataset_manager.task import put_task_data, patch_task_data
 from cvat.apps.engine.frame_provider import FrameProvider
+from cvat.apps.engine.utils import av_scan_paths
 
 from .models import AnnotationModel, FrameworkChoice
 from .model_loader import load_labelmap
@@ -139,6 +140,7 @@ def create_or_update(dl_model_id, name, model_file, weights_file, labelmap_file,
                 tmp_file.write(chunk)
         os.close(fd)
         return filename
+
     is_create_request = dl_model_id is None
     if is_create_request:
         dl_model_id = create_empty(owner=owner)
@@ -154,6 +156,17 @@ def create_or_update(dl_model_id, name, model_file, weights_file, labelmap_file,
         weights_file = save_file_as_tmp(weights_file)
         labelmap_file = save_file_as_tmp(labelmap_file)
         interpretation_file = save_file_as_tmp(interpretation_file)
+
+    files_to_scan = []
+    if model_file:
+        files_to_scan.append(model_file)
+    if weights_file:
+        files_to_scan.append(weights_file)
+    if labelmap_file:
+        files_to_scan.append(labelmap_file)
+    if interpretation_file:
+        files_to_scan.append(interpretation_file)
+    av_scan_paths(*files_to_scan)
 
     if owner:
         restricted = not has_admin_role(owner)
@@ -248,9 +261,9 @@ def run_inference_thread(tid, model_file, weights_file, labels_mapping, attribut
             serializer = LabeledDataSerializer(data = result)
             if serializer.is_valid(raise_exception=True):
                 if reset:
-                    put_task_data(tid, user, result)
+                    put_task_data(tid, result)
                 else:
-                    patch_task_data(tid, user, result, "create")
+                    patch_task_data(tid, result, "create")
 
             slogger.glob.info("auto annotation for task {} done".format(tid))
     except Exception as e:
