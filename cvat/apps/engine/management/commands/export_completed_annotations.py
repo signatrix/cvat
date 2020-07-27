@@ -28,7 +28,11 @@ class Command(BaseCommand):
             options['dump_folder'] = os.path.join("/home/django/share/out/", datetime.now().strftime("%Y_%m_%d"))
         verbose = options['verbose']
         exported_tasks = []
-        for task in Task.objects.filter(status='completed', owner__isnull=False, assignee__isnull=False):
+        for task in Task.objects.filter(status='completed', assignee__isnull=False):
+            if task.owner is None:
+                if verbose:
+                    print('Task ' + task.name + 'does not have an owner, skipping...')
+                continue
             try:
                 dump_annotations(task, options['dump_folder'], overwrite=options['overwrite'])
                 exported_tasks.append(task)
