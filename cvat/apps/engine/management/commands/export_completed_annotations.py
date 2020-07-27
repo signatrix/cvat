@@ -51,6 +51,8 @@ class Command(BaseCommand):
             else:
                 if verbose:
                     print('\nNo tasks were deleted. Make sure you will not export them multiple times to red in the future.')
+        else:
+            shutil.rmtree(options['dump_folder'], ignore_errors=True)
 
 
 def dump_annotations(task, dump_folder, overwrite=False):
