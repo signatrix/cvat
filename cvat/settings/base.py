@@ -14,6 +14,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.0/ref/settings/
 """
 
+from pathlib import Path
 import os
 import sys
 import fcntl
@@ -22,7 +23,6 @@ import subprocess
 import mimetypes
 mimetypes.add_type("application/wasm", ".wasm", True)
 
-from pathlib import Path
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = str(Path(__file__).parents[2])
@@ -32,7 +32,7 @@ INTERNAL_IPS = ['127.0.0.1']
 
 try:
     sys.path.append(BASE_DIR)
-    from keys.secret_key import SECRET_KEY # pylint: disable=unused-import
+    from keys.secret_key import SECRET_KEY  # pylint: disable=unused-import
 except ImportError:
 
     from django.utils.crypto import get_random_string
@@ -53,15 +53,15 @@ def generate_ssh_keys():
     with open(pidfile, "w") as pid:
         fcntl.flock(pid, fcntl.LOCK_EX)
         try:
-            subprocess.run(['ssh-add {}/*'.format(ssh_dir)], shell = True, stderr = subprocess.PIPE)
-            keys = subprocess.run(['ssh-add -l'], shell = True,
-                stdout = subprocess.PIPE).stdout.decode('utf-8').split('\n')
+            subprocess.run(['ssh-add {}/*'.format(ssh_dir)], shell=True, stderr=subprocess.PIPE)
+            keys = subprocess.run(['ssh-add -l'], shell=True,
+                                  stdout=subprocess.PIPE).stdout.decode('utf-8').split('\n')
             if 'has no identities' in keys[0]:
                 print('SSH keys were not found')
                 volume_keys = os.listdir(keys_dir)
                 if not ('id_rsa' in volume_keys and 'id_rsa.pub' in volume_keys):
                     print('New pair of keys are being generated')
-                    subprocess.run(['ssh-keygen -b 4096 -t rsa -f {}/id_rsa -q -N ""'.format(ssh_dir)], shell = True)
+                    subprocess.run(['ssh-keygen -b 4096 -t rsa -f {}/id_rsa -q -N ""'.format(ssh_dir)], shell=True)
                     shutil.copyfile('{}/id_rsa'.format(ssh_dir), '{}/id_rsa'.format(keys_dir))
                     shutil.copymode('{}/id_rsa'.format(ssh_dir), '{}/id_rsa'.format(keys_dir))
                     shutil.copyfile('{}/id_rsa.pub'.format(ssh_dir), '{}/id_rsa.pub'.format(keys_dir))
@@ -72,9 +72,10 @@ def generate_ssh_keys():
                     shutil.copymode('{}/id_rsa'.format(keys_dir), '{}/id_rsa'.format(ssh_dir))
                     shutil.copyfile('{}/id_rsa.pub'.format(keys_dir), '{}/id_rsa.pub'.format(ssh_dir))
                     shutil.copymode('{}/id_rsa.pub'.format(keys_dir), '{}/id_rsa.pub'.format(ssh_dir))
-                subprocess.run(['ssh-add', '{}/id_rsa'.format(ssh_dir)], shell = True)
+                subprocess.run(['ssh-add', '{}/id_rsa'.format(ssh_dir)], shell=True)
         finally:
             fcntl.flock(pid, fcntl.LOCK_UN)
+
 
 try:
     if os.getenv("SSH_AUTH_SOCK", None):
@@ -295,7 +296,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Cache DB access (e.g. for engine.task.get_frame)
 # https://github.com/Suor/django-cacheops
 CACHEOPS_REDIS = {
-    'host': 'localhost', # redis-server is on same machine
+    'host': 'localhost',  # redis-server is on same machine
     'port': 6379,        # default redis port
     'db': 1,             # SELECT non-default redis database
 }
@@ -374,7 +375,7 @@ LOGGING = {
             'level': 'DEBUG',
             'filename': os.path.join(BASE_DIR, 'logs', 'cvat_server.log'),
             'formatter': 'standard',
-            'maxBytes': 1024*1024*50, # 50 MB
+            'maxBytes': 1024*1024*50,  # 50 MB
             'backupCount': 5,
         },
         'logstash': {
@@ -428,7 +429,7 @@ RESTRICTIONS = {
     'task_limit': None,
 
     # this setting reduse task visibility to owner and assignee only
-    'reduce_task_visibility': False,
+    'reduce_task_visibility': True,
 
     # allow access to analytics component to users with the following roles
     'analytics_access': (
@@ -436,5 +437,5 @@ RESTRICTIONS = {
         'engine.role.annotator',
         'engine.role.user',
         'engine.role.admin',
-        ),
+    ),
 }

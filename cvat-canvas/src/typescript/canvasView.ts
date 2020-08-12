@@ -1371,32 +1371,10 @@ export class CanvasViewImpl implements CanvasView, Listener {
                 } else if (state.shapeType === 'cuboid') {
                     this.svgShapes[state.clientID] = this
                         .addCuboid(stringified, state);
+                } else if (state.shapeType === 'template') {
+                    this.svgShapes[state.clientID] = this.addGraph(translatedPoints, state);
                 } else {
-                    const stringified = translatedPoints.reduce(
-                        (acc: string, val: number, idx: number): string => {
-                            if (idx % 2) {
-                                return `${acc}${val} `;
-                            }
-
-                            return `${acc}${val},`;
-                        }, '',
-                    );
-
-                    if (state.shapeType === 'polygon') {
-                        this.svgShapes[state.clientID] = this
-                            .addPolygon(stringified, state);
-                    } else if (state.shapeType === 'polyline') {
-                        this.svgShapes[state.clientID] = this
-                            .addPolyline(stringified, state);
-                    } else if (state.shapeType === 'points') {
-                        this.svgShapes[state.clientID] = this
-                            .addPoints(stringified, state);
-                    } else if (state.shapeType === 'cuboid') {
-                        this.svgShapes[state.clientID] = this
-                            .addCuboid(stringified, state);
-                    } else if (state.shapeType === 'template') {
-                        this.svgShapes[state.clientID] = this.addGraph(translatedPoints, state);
-                    }
+                    continue;
                 }
             }
 

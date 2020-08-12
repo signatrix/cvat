@@ -66,6 +66,7 @@ export interface DrawData {
     numberOfPoints?: number;
     initialState?: any;
     crosshair?: boolean;
+    redraw?: number;
     template?: {
         vertices: Point2D[];
         labels: number[];

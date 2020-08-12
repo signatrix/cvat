@@ -47,6 +47,7 @@ interface DispatchToProps {
     resetGroup(): void;
     repeatDrawShape(): void;
     pasteShape(): void;
+    redrawShape(): void;
 
     onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
@@ -118,6 +119,9 @@ function dispatchToProps(dispatch: ThunkDispatch<{}, {}, AnyAction>): DispatchTo
         },
         resetGroup(): void {
             dispatch(resetAnnotationsGroup());
+        },
+        redrawShape(): void {
+            dispatch(redrawShapeAsync());
         },
         onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void> {
             return dispatch(createAnnotationsAsync(sessionInstance, frame, states));

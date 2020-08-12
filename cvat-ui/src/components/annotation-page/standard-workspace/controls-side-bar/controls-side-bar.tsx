@@ -42,6 +42,7 @@ interface Props {
     repeatDrawShape(): void;
     pasteShape(): void;
     resetGroup(): void;
+    redrawShape(): void;
     onCreateAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
@@ -60,6 +61,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         repeatDrawShape,
         pasteShape,
         resetGroup,
+        redrawShape,
         normalizedKeyMap,
         keyMap,
 

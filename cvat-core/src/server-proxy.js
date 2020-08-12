@@ -588,7 +588,10 @@
 
             async function getTracking(args) {
                 const { backendAPI, proxy } = config;
-                const { origin } = new URL(backendAPI);
+
+                const origin = backendAPI.startsWith('/')
+                    ? ''
+                    : new URL(backendAPI).origin;
 
                 const url = `${origin}/tracking/track-points`;
                 const data = JSON.stringify(args);
