@@ -25,92 +25,101 @@ export interface TemplateControlProps {
 export const TemplateControl: FC<TemplateControlProps> = ({
     canvasInstance,
     isDrawing,
-    jobInstance,
     frame,
     labels,
-    onCreateAnnotationsAndGrouping
 }) => {
     const template: VertexTemplate[] = [
         {
             location: [0.5, 0],
-            nameHint: "Head"
+            nameHint: 'Head',
         },
         {
             location: [0.5, 0.1],
-            nameHint: "Neck"
+            nameHint: 'Neck',
         },
 
         {
             location: [0.28, 0.12],
-            nameHint: "RShoulder"
+            nameHint: 'RShoulder',
         },
         {
             location: [0.26, 0.3],
-            nameHint: "RElbow"
+            nameHint: 'RElbow',
         },
         {
             location: [0.24, 0.5],
-            nameHint: "RWrist"
+            nameHint: 'RWrist',
         },
 
         {
             location: [0.72, 0.12],
-            nameHint: "LShoulder"
+            nameHint: 'LShoulder',
         },
         {
             location: [0.75, 0.3],
-            nameHint: "LElbow"
+            nameHint: 'LElbow',
         },
         {
             location: [0.76, 0.5],
-            nameHint: "LWrist"
+            nameHint: 'LWrist',
         },
 
         {
             location: [0.30, 0.45],
-            nameHint: "RHip",
+            nameHint: 'RHip',
         },
         {
             location: [0.27, 0.75],
-            nameHint: "RKnee",
+            nameHint: 'RKnee',
         },
         {
             location: [0.25, 1.0],
-            nameHint: "RAnkle",
+            nameHint: 'RAnkle',
         },
 
         {
             location: [0.70, 0.45],
-            nameHint: "LHip",
+            nameHint: 'LHip',
         },
         {
             location: [0.73, 0.75],
-            nameHint: "LKnee",
+            nameHint: 'LKnee',
         },
         {
             location: [0.75, 1.0],
-            nameHint: "LAnkle",
+            nameHint: 'LAnkle',
         },
 
         // {
         //     location: [0, 0],
-        //     nameHint: "tl",
+        //     nameHint: 'tl',
         // },
         // {
         //     location: [1, 0],
-        //     nameHint: "tr",
+        //     nameHint: 'tr',
         // },
         // {
         //     location: [0, 1],
-        //     nameHint: "bl",
+        //     nameHint: 'bl',
         // },
         // {
         //     location: [1, 1],
-        //     nameHint: "br",
+        //     nameHint: 'br',
         // }
     ];
 
     const [points, setPoints] = useState<(PointData & { id: number })[]>([]);
+
+    const getLabel = (nameHint: string | undefined) => {
+        const defaultLabel = labels[0] || { id: 1 };
+
+        if (nameHint === undefined) return defaultLabel;
+
+        const nameHintLowerCase = nameHint.toLowerCase();
+        const alternatives = labels.filter((name) => name.includes(nameHintLowerCase));
+
+        return alternatives[0] || defaultLabel;
+    };
 
     useEffect(() => {
         setPoints(
@@ -118,26 +127,23 @@ export const TemplateControl: FC<TemplateControlProps> = ({
                 points: location,
                 frame,
                 zOrder: 0,
-                label: labels[0] || { id: 1 },
+                label: getLabel(nameHint),
                 nameHint,
-                id: idx
-            }))
+                id: idx,
+            })),
         );
     }, []);
 
     const handleChangeLabel = useCallback(
-        (pointId: number) => (labelId: number) =>
-            setPoints(
-                points.map(point =>
-                    point.id === pointId
-                        ? {
-                              ...point,
-                              label: { id: labelId }
-                          }
-                        : point
-                )
-            ),
-        [points]
+        (pointId: number) => (labelId: number) => setPoints(points.map((point) => {
+            return point.id === pointId
+                ? {
+                    ...point,
+                    label: { id: labelId },
+                }
+                : point;
+        })),
+        [points],
     );
 
     const drawTemplate = () => {
@@ -146,10 +152,10 @@ export const TemplateControl: FC<TemplateControlProps> = ({
             enabled: true,
             shapeType: ShapeType.TEMPLATE,
             template: {
-                vertices: points.map(x => x.points),
-                labels: points.map(x => x.label.id),
+                vertices: points.map((x) => x.points),
+                labels: points.map((x) => x.label.id),
                 edges: [],
-            }
+            },
         });
 
         // const states = points.map(createPoint);
@@ -159,24 +165,24 @@ export const TemplateControl: FC<TemplateControlProps> = ({
     const dynamicPopoverPros = isDrawing
         ? {
               overlayStyle: {
-                  display: "none"
-              }
+                  display: 'none',
+              },
           }
         : {};
 
     const dynamicIconProps = isDrawing
         ? {
-              className: "cvat-active-canvas-control",
+              className: 'cvat-active-canvas-control',
               onClick: (): void => {
                   canvasInstance.draw({ enabled: false });
-              }
+              },
           }
         : {};
 
     const popoverContent = (
         <div
             style={{
-                padding: "10px"
+                padding: '10px',
             }}
         >
             <Row>
@@ -204,7 +210,7 @@ export const TemplateControl: FC<TemplateControlProps> = ({
                                                 {label.name}
                                             </Select.Option>
                                         ))}
-                                    </Select>
+                                    </Select>,
                                 ]}
                             >
                                 <List.Item.Meta
@@ -226,14 +232,14 @@ export const TemplateControl: FC<TemplateControlProps> = ({
     return (
         <Popover
             {...dynamicPopoverPros}
-            overlayClassName="cvat-draw-shape-popover"
-            placement="right"
+            overlayClassName='cvat-draw-shape-popover'
+            placement='right'
             content={popoverContent}
         >
             <p
                 style={{
-                    textAlign: "center",
-                    fontWeight: "bold"
+                    textAlign: 'center',
+                    fontWeight: 'bold',
                 }}
                 {...dynamicIconProps}
             >
@@ -274,9 +280,9 @@ const createPoint = ({ label, ...other }: PointData) =>
     new cvat.classes.ObjectState({
         label: createLabel(label),
         occluded: false,
-        objectType: "track",
-        shapeType: "points",
-        ...other
+        objectType: 'track',
+        shapeType: 'points',
+        ...other,
     });
 
 export default TemplateControl;
