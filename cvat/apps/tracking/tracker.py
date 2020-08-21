@@ -66,12 +66,12 @@ def image_iterable_from_task(task, start_frame, stop_frame):
         yield frame, img
 
 class RectangleTracker:
-    trackerTypes = ['BOOSTING', 'MIL', 'KCF', 'CSRT', 'MEDIANFLOW', 'TLD',
+    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'CSRT', 'MEDIANFLOW', 'TLD',
         'MOSSE', 'GOTRUN']
 
-    def __init__(self, trackerType = "BOOSTING"):
+    def __init__(self, tracker_type = "BOOSTING"):
         """Create tracker.
-        :param str trackerType: String specifying tracker, see trackerTypes.
+        :param str tracker_type: String specifying tracker, see tracker_types.
         """
         self.tracker_factory = {
             'BOOSTING': cv2.TrackerBoosting_create,
@@ -84,10 +84,10 @@ class RectangleTracker:
             'GOTRUN': cv2.TrackerGOTURN_create,
         }
 
-        if trackerType not in self.tracker_factory:
-            raise Exception("Tracker type not known:" + trackerType)
+        if tracker_type not in self.tracker_factory:
+            raise Exception("Tracker type not known:" + tracker_type)
 
-        self._tracker_type = trackerType
+        self._tracker_type = tracker_type
 
     def track_rectangles(self, task, start_shapes, stop_frame):
         # Only track in to future.
@@ -125,12 +125,12 @@ class RectangleTracker:
         return shapes_by_tracking
 
 class PointsTracker:
-    trackerTypes = ['BOOSTING', 'MIL', 'KCF', 'CSRT', 'MEDIANFLOW', 'TLD',
+    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'CSRT', 'MEDIANFLOW', 'TLD',
         'MOSSE', 'GOTRUN']
 
-    def __init__(self, trackerType = "CSRT"):
+    def __init__(self, tracker_type = "CSRT"):
         """Create tracker.
-        :param str trackerType: String specifying tracker, see trackerTypes.
+        :param str tracker_type: String specifying tracker, see tracker_types.
         """
         self.tracker_factory = {
             'BOOSTING': cv2.TrackerBoosting_create,
@@ -143,10 +143,10 @@ class PointsTracker:
             'GOTRUN': cv2.TrackerGOTURN_create,
         }
 
-        if trackerType not in self.tracker_factory:
-            raise Exception("Tracker type not known:" + trackerType)
+        if tracker_type not in self.tracker_factory:
+            raise Exception("Tracker type not known:" + tracker_type)
 
-        self._tracker_type = trackerType
+        self._tracker_type = tracker_type
 
     def track_multi_points(self, task, starting_shapes, stop_frame):
         # Only track in to future.
