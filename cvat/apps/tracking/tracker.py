@@ -73,7 +73,7 @@ class RectangleTracker:
         """Create tracker.
         :param str trackerType: String specifying tracker, see trackerTypes.
         """
-        self.trackers_constructor = {
+        self.tracker_factory = {
             'BOOSTING': cv2.TrackerBoosting_create,
             'MIL': cv2.TrackerMIL_create,
             'KCF': cv2.TrackerKCF_create,
@@ -84,7 +84,7 @@ class RectangleTracker:
             'GOTRUN': cv2.TrackerGOTURN_create,
         }
 
-        if trackerType not in self.trackers_constructor:
+        if trackerType not in self.tracker_factory:
             raise Exception("Tracker type not known:" + trackerType)
 
         self._tracker_type = trackerType
@@ -104,7 +104,7 @@ class RectangleTracker:
 
         for shape in start_shapes:
             bbox = rectangle_to_cv_bbox(shape.points)
-            tracker = self.trackers_constructor[self._tracker_type]()
+            tracker = self.tracker_factory[self._tracker_type]()
             trackers.add(tracker, img0, bbox)
 
         #Generated shapes
@@ -132,7 +132,7 @@ class PointsTracker:
         """Create tracker.
         :param str trackerType: String specifying tracker, see trackerTypes.
         """
-        self.trackers_constructor = {
+        self.tracker_factory = {
             'BOOSTING': cv2.TrackerBoosting_create,
             'MIL': cv2.TrackerMIL_create,
             'KCF': cv2.TrackerKCF_create,
@@ -143,7 +143,7 @@ class PointsTracker:
             'GOTRUN': cv2.TrackerGOTURN_create,
         }
 
-        if trackerType not in self.trackers_constructor:
+        if trackerType not in self.tracker_factory:
             raise Exception("Tracker type not known:" + trackerType)
 
         self._tracker_type = trackerType
@@ -163,7 +163,7 @@ class PointsTracker:
 
         for shape in starting_shapes:
             bbox = point_to_cv_bbox(shape.points)
-            tracker = self.trackers_constructor[self._tracker_type]()
+            tracker = self.tracker_factory[self._tracker_type]()
             trackers.add(tracker, img0, bbox)
 
         #Generated shapes
