@@ -148,9 +148,9 @@ class PointsTracker:
 
         self._tracker_type = trackerType
 
-    def track_multi_points(self, task, start_shapes, stop_frame):
+    def track_multi_points(self, task, starting_shapes, stop_frame):
         # Only track in to future.
-        start_frame = start_shapes[0].frame
+        start_frame = starting_shapes[0].frame
         if stop_frame < start_frame:
             return []
 
@@ -161,7 +161,7 @@ class PointsTracker:
 
         trackers = cv2.MultiTracker_create()
 
-        for shape in start_shapes:
+        for shape in starting_shapes:
             bbox = point_to_cv_bbox(shape.points)
             tracker = self.trackers_constructor[self._tracker_type]()
             trackers.add(tracker, img0, bbox)
@@ -173,7 +173,7 @@ class PointsTracker:
             no_errors, boxes = trackers.update(img)
 
             if no_errors:
-                for shape, bbox in zip(start_shapes, boxes):
+                for shape, bbox in zip(starting_shapes, boxes):
                     new_shape = copy.copy(shape)
                     new_shape.points = cv_bbox_to_point(bbox)
                     new_shape.frame = frame
