@@ -116,7 +116,7 @@ export const TemplateControl: FC<TemplateControlProps> = ({
         if (nameHint === undefined) return defaultLabel;
 
         const nameHintLowerCase = nameHint.toLowerCase();
-        const alternatives = labels.filter((name) => name.includes(nameHintLowerCase));
+        const alternatives = labels.filter(({ name }) => name.includes(nameHintLowerCase));
 
         return alternatives[0] || defaultLabel;
     };
