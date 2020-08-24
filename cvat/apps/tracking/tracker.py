@@ -6,7 +6,7 @@ import cv2
 import copy
 
 
-def rectanlge_to_cv_bbox(rectangle_points):
+def rectangle_to_cv_bbox(rectangle_points):
     """
     Convert the CVAT rectangle points (serverside) to a OpenCV rectangle.
     :param tuple rectangle_points: Tuple of form (x1,y1,x2,y2)
@@ -66,77 +66,14 @@ def image_iterable_from_task(task, start_frame, stop_frame):
         yield frame, img
 
 class RectangleTracker:
-    trackerTypes = ['BOOSTING', 'MIL', 'KCF', 'CSRT', 'MEDIANFLOW', 'TLD',
+    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'CSRT', 'MEDIANFLOW', 'TLD',
         'MOSSE', 'GOTRUN']
 
-    def __init__(self, trackerType = "BOOSTING"):
+    def __init__(self, tracker_type = "BOOSTING"):
         """Create tracker.
-        :param str trackerType: String specifying tracker, see trackerTypes.
+        :param str tracker_type: String specifying tracker, see tracker_types.
         """
-        trackerTypes_constructor = {
-            'BOOSTING': cv2.TrackerBoosting_create,
-            'MIL': cv2.TrackerMIL_create,
-            'KCF': cv2.TrackerKCF_create,
-            'CSRT': cv2.TrackerCSRT_create,
-            'MEDIANFLOW': cv2.TrackerMedianFlow_create,
-            'TLD': cv2.TrackerTLD_create,
-            'MOSSE': cv2.TrackerMOSSE_create,
-            'GOTRUN': cv2.TrackerGOTURN_create,
-        }
-        if trackerType not in trackerTypes_constructor:
-            raise Exception("Tracker type not known:" + trackerType)
-        self._tracker = trackerTypes_constructor[trackerType]()
-
-    def track_rectangles(self, task, start_shape, stop_frame):
-        """
-        Follow an the rectangle in consecutive frames of a task.
-        :param Task task: The Django Task with the images
-        :param TrackedShape start_shape: Start tracking with this shape; This
-            specifies the frame to start at (start_shape.frame).
-        :param int stop_frame: Stop tracking at this frame (excluded).
-        :return: List of Shapes (Rectangles) with new shapes.
-        """
-        if not isinstance(start_shape, TrackedShape):
-             raise Exception("start_shape must be of type TrackedShape")
-
-        # Only track in to future.
-        start_frame = start_shape.frame
-        if stop_frame < start_frame:
-            return []
-
-        # Load the image iterable for range of frames
-        # and init the tracker with the bounding box from the user given shape
-        images = image_iterable_from_task(task, start_frame, stop_frame)
-        img0 = next(images)[1]
-        bbox = rectanlge_to_cv_bbox(start_shape.points)
-        no_error = self._tracker.init(img0, bbox)
-
-        #Generated shapes
-        shapes_by_tracking = []
-        for frame, img  in images:
-            # Let the tracker find the bounding box in the next image(s)
-            no_error, bbox = self._tracker.update(img)
-
-            if no_error:
-                new_shape = copy.copy(start_shape)
-                new_shape.pk = None
-                new_shape.points = cv_bbox_to_rectangle(bbox)
-                new_shape.frame = frame
-                shapes_by_tracking.append(new_shape)
-            else:
-                break
-
-        return shapes_by_tracking
-
-class PointsTracker:
-    trackerTypes = ['BOOSTING', 'MIL', 'KCF', 'CSRT', 'MEDIANFLOW', 'TLD',
-        'MOSSE', 'GOTRUN']
-
-    def __init__(self, trackerType = "CSRT"):
-        """Create tracker.
-        :param str trackerType: String specifying tracker, see trackerTypes.
-        """
-        self.trackers_constructor = {
+        self.tracker_factory = {
             'BOOSTING': cv2.TrackerBoosting_create,
             'MIL': cv2.TrackerMIL_create,
             'KCF': cv2.TrackerKCF_create,
@@ -147,12 +84,12 @@ class PointsTracker:
             'GOTRUN': cv2.TrackerGOTURN_create,
         }
 
-        if trackerType not in self.trackers_constructor:
-            raise Exception("Tracker type not known:" + trackerType)
+        if tracker_type not in self.tracker_factory:
+            raise Exception("Tracker type not known:" + tracker_type)
 
-        self._tracker_type = trackerType
+        self._tracker_type = tracker_type
 
-    def track_multi_points(self, task, start_shapes, stop_frame):
+    def track_rectangles(self, task, start_shapes, stop_frame):
         # Only track in to future.
         start_frame = start_shapes[0].frame
         if stop_frame < start_frame:
@@ -166,8 +103,8 @@ class PointsTracker:
         trackers = cv2.MultiTracker_create()
 
         for shape in start_shapes:
-            bbox = point_to_cv_bbox(shape.points)
-            tracker = self.trackers_constructor[self._tracker_type]()
+            bbox = rectangle_to_cv_bbox(shape.points)
+            tracker = self.tracker_factory[self._tracker_type]()
             trackers.add(tracker, img0, bbox)
 
         #Generated shapes
@@ -178,6 +115,65 @@ class PointsTracker:
 
             if no_errors:
                 for shape, bbox in zip(start_shapes, boxes):
+                    new_shape = copy.copy(shape)
+                    new_shape.points = cv_bbox_to_rectangle(bbox)
+                    new_shape.frame = frame
+                    shapes_by_tracking.append(new_shape)
+            else:
+                break
+
+        return shapes_by_tracking
+
+class PointsTracker:
+    tracker_types = ['BOOSTING', 'MIL', 'KCF', 'CSRT', 'MEDIANFLOW', 'TLD',
+        'MOSSE', 'GOTRUN']
+
+    def __init__(self, tracker_type = "CSRT"):
+        """Create tracker.
+        :param str tracker_type: String specifying tracker, see tracker_types.
+        """
+        self.tracker_factory = {
+            'BOOSTING': cv2.TrackerBoosting_create,
+            'MIL': cv2.TrackerMIL_create,
+            'KCF': cv2.TrackerKCF_create,
+            'CSRT': cv2.TrackerCSRT_create,
+            'MEDIANFLOW': cv2.TrackerMedianFlow_create,
+            'TLD': cv2.TrackerTLD_create,
+            'MOSSE': cv2.TrackerMOSSE_create,
+            'GOTRUN': cv2.TrackerGOTURN_create,
+        }
+
+        if tracker_type not in self.tracker_factory:
+            raise Exception("Tracker type not known:" + tracker_type)
+
+        self._tracker_type = tracker_type
+
+    def track_multi_points(self, task, starting_shapes, stop_frame):
+        # Only track in to future.
+        start_frame = starting_shapes[0].frame
+        if stop_frame < start_frame:
+            return []
+
+        # Load the image iterable for range of frames
+        # and init the tracker with the bounding box from the user given shape
+        images = image_iterable_from_task(task, start_frame, stop_frame)
+        img0 = next(images)[1]
+
+        trackers = cv2.MultiTracker_create()
+
+        for shape in starting_shapes:
+            bbox = point_to_cv_bbox(shape.points)
+            tracker = self.tracker_factory[self._tracker_type]()
+            trackers.add(tracker, img0, bbox)
+
+        #Generated shapes
+        shapes_by_tracking = []
+        for frame, img  in images:
+            # Let the tracker find the bounding box in the next image(s)
+            no_errors, boxes = trackers.update(img)
+
+            if no_errors:
+                for shape, bbox in zip(starting_shapes, boxes):
                     new_shape = copy.copy(shape)
                     new_shape.points = cv_bbox_to_point(bbox)
                     new_shape.frame = frame

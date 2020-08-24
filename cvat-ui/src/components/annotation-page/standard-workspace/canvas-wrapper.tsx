@@ -131,6 +131,7 @@ interface Props {
     onSwitchAutomaticBordering(enabled: boolean): void;
     onFetchAnnotation(): void;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
+    onFetchAnnotation(): void;
 }
 
 export default class CanvasWrapperComponent extends React.PureComponent<Props> {

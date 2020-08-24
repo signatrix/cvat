@@ -53,6 +53,7 @@ interface DispatchToProps {
     onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onTrackAnnotation(sessionInstance: any, frame: number): Promise<void>;
+    redrawShape(): void;
 }
 
 function mapStateToProps(state: CombinedState): StateToProps {
@@ -134,6 +135,9 @@ function dispatchToProps(dispatch: ThunkDispatch<{}, {}, AnyAction>): DispatchTo
         onTrackAnnotation(sessionInstance: any, frame: number): Promise<void> {
             return dispatch(trackAnnotationsAsync(sessionInstance, frame));
         }
+        redrawShape(): void {
+            dispatch(redrawShapeAsync());
+        },
     };
 }
 

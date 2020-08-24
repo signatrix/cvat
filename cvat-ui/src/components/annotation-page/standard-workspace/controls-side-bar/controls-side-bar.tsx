@@ -47,6 +47,7 @@ interface Props {
     onGroupAnnotations(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onTrackAnnotation(sessionInstance: any, frame: number): Promise<void>;
+    redrawShape(): void;
 }
 
 export default function ControlsSideBarComponent(props: Props): JSX.Element {
@@ -69,6 +70,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         frame,
         onCreateAnnotationsAndGrouping,
         onTrackAnnotation,
+        redrawShape,
     } = props;
 
     const preventDefault = (event: KeyboardEvent | undefined): void => {

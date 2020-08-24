@@ -85,16 +85,32 @@ def track_points(request):
         s = copy.copy(tracked_shape_on_wire)
         return TrackedShape(**s)
 
-    start_shapes = list(map(shape_to_db, shape_tracks))
+    starting_shapes = list(map(shape_to_db, shape_tracks))
+
+    points_starting_shapes = list(filter(is_point, starting_shapes))
+    rectangle_starting_shapes = list(filter(is_rectangle, starting_shapes))
 
     # Do the actual tracking and serializee back
     tracker = PointsTracker()
-    new_shapes = tracker.track_multi_points(task, start_shapes, stop_frame)
-    new_shapes = [TrackedShapeSerializer(s).data for s in new_shapes]
+    rectangle_tracker = RectangleTracker()
+
+    points_new_shapes = tracker.track_multi_points(task, points_starting_shapes, stop_frame)
+    rectangle_new_shapes = rectangle_tracker.track_rectangles(task, rectangle_starting_shapes, stop_frame)
+
+    points_new_shapes = [TrackedShapeSerializer(s).data for s in points_new_shapes]
+    rectangle_new_shapes = [TrackedShapeSerializer(s).data for s in rectangle_new_shapes]
 
     response = {
-        'start_shapes': [TrackedShapeSerializer(s).data for s in start_shapes],
-        'tracked_shapes': new_shapes,
+        'start_shapes': [TrackedShapeSerializer(s).data for s in starting_shapes],
+        'tracked_shapes': points_new_shapes + rectangle_new_shapes,
     }
 
     return JsonResponse(response)
+
+
+def is_point(shape):
+    return shape.type == 'points'
+
+
+def is_rectangle(shape):
+    return shape.type == 'rectangle'

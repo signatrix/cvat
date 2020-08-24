@@ -1374,7 +1374,7 @@ export class CanvasViewImpl implements CanvasView, Listener {
                 } else if (state.shapeType === 'template') {
                     this.svgShapes[state.clientID] = this.addGraph(translatedPoints, state);
                 } else {
-                	continue;                    continue;
+                    continue;
                 }
             }
 

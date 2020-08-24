@@ -14,10 +14,9 @@
         PolylineShape,
         PointsShape,
         CuboidShape,
-        RectangleTrack,
+        RectangleTrackWithTracking,
         PolygonTrack,
         PolylineTrack,
-        PointsTrack,
         PointsTrackWithTracking,
         CuboidTrack,
         Track,
@@ -82,7 +81,7 @@
             let trackModel = null;
             switch (type) {
             case 'rectangle':
-                trackModel = new RectangleTrack(trackData, clientID, color, injection);
+                trackModel = new RectangleTrackWithTracking(trackData, clientID, color, injection);
                 break;
             case 'polygon':
                 trackModel = new PolygonTrack(trackData, clientID, color, injection);
@@ -92,6 +91,9 @@
                 break;
             case 'points':
                 trackModel = new PointsTrackWithTracking(trackData, clientID, color, injection);
+                break;
+            case 'cuboid':
+                trackModel = new CuboidTrack(trackData, clientID, color, injection);
                 break;
             case 'cuboid':
                 trackModel = new CuboidTrack(trackData, clientID, color, injection);

@@ -72,6 +72,7 @@ export interface DrawData {
         labels: number[];
         edges: Edge[];
     }
+    redraw?: number;
 }
 
 type Point2D = [number, number];

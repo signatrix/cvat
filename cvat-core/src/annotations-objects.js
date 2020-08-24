@@ -1550,6 +1550,109 @@
         }
     }
 
+    class RectangleTrackWithTracking extends RectangleTrack {
+        constructor(data, clientID, color, injection) {
+            super(data, clientID, color, injection);
+            this.shapeType = ObjectShape.RECTANGLE;
+            this.pinned = false;
+            for (const shape of Object.values(this.shapes)) {
+                checkNumberOfPoints(this.shapeType, shape.points);
+            }
+            this.trackingData = {};
+        }
+
+        updateTracking(trackingData) {
+            this.trackingData = { ...this.trackingData, ...trackingData };
+        }
+
+        getPosition(targetFrame, leftKeyframe, rightFrame) {
+            const leftFrame = targetFrame in this.shapes ? targetFrame : leftKeyframe;
+            const rightPosition = Number.isInteger(rightFrame) ? this.shapes[rightFrame] : null;
+            const leftPosition = Number.isInteger(leftFrame) ? this.shapes[leftFrame] : null;
+
+            const trackingPoints = this.trackingData[targetFrame];
+            const isKeyFrame = targetFrame in this.shapes;
+            const targetPositionPoints = isKeyFrame ? this.shapes[targetFrame].points : undefined;
+
+            if (targetPositionPoints) {
+                return {
+                    points: [...targetPositionPoints],
+                    occluded: leftPosition.occluded,
+                    outside: leftPosition.outside,
+                    zOrder: leftPosition.zOrder,
+                    keyframe: isKeyFrame,
+                };
+            }
+
+            if (trackingPoints !== undefined) {
+                const labelAttributes = this.label.attributes.reduce((accumulator, attribute) => {
+                    accumulator[attribute.id] = attribute;
+                    return accumulator;
+                }, {});
+
+                const shape = {
+                    type: this.shapeType,
+                    zOrder: leftPosition.zOrder,
+                    points: [...trackingPoints],
+                    outside: leftPosition.outside,
+                    occluded: leftPosition.occluded,
+                    attributes: Object.keys(leftPosition.attributes)
+                        .reduce((attributeAccumulator, attrId) => {
+                            if (labelAttributes[attrId].mutable) {
+                                attributeAccumulator.push({
+                                    spec_id: attrId,
+                                    value: leftPosition.attributes[attrId],
+                                });
+                            }
+
+                            return attributeAccumulator;
+                        }, []),
+                    frame: targetFrame,
+                };
+
+                this.shapes[targetFrame] = shape;
+
+                return shape;
+            }
+
+            if (leftPosition && rightPosition) {
+                return {
+                    ...this.interpolatePosition(
+                        leftPosition,
+                        rightPosition,
+                        (targetFrame - leftFrame) / (rightFrame - leftFrame),
+                    ),
+                    keyframe: isKeyFrame,
+                };
+            }
+
+            if (leftPosition) {
+                return {
+                    points: [...leftPosition.points],
+                    occluded: leftPosition.occluded,
+                    outside: leftPosition.outside,
+                    zOrder: leftPosition.zOrder,
+                    keyframe: isKeyFrame,
+                };
+            }
+
+            if (rightPosition) {
+                return {
+                    points: [...rightPosition.points],
+                    occluded: rightPosition.occluded,
+                    outside: true,
+                    zOrder: rightPosition.zOrder,
+                    keyframe: isKeyFrame,
+                };
+            }
+
+            throw new DataError(
+                'No one left position or right position was found. '
+                + `Interpolation impossible. Client ID: ${this.clientID}`,
+            );
+        }
+    }
+
     class PolyTrack extends Track {
         constructor(data, clientID, color, injection) {
             super(data, clientID, color, injection);
@@ -2040,6 +2143,7 @@
         PointsShape,
         CuboidShape,
         RectangleTrack,
+        RectangleTrackWithTracking,
         PolygonTrack,
         PolylineTrack,
         PointsTrack,
