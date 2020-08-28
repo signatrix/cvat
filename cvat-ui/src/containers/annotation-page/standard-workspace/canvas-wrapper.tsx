@@ -26,7 +26,6 @@ import {
     updateCanvasContextMenu,
     addZLayer,
     switchZLayer,
-    fetchAnnotationsAsync,
     createAnnotationsAndGroupAsync,
     fetchAnnotationsAsync,
 } from 'actions/annotation-actions';
@@ -120,7 +119,6 @@ interface DispatchToProps {
     onChangeGridColor(color: GridColor): void;
     onSwitchGrid(enabled: boolean): void;
     onSwitchAutomaticBordering(enabled: boolean): void;
-    onFetchAnnotation(): void;
     onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
     onFetchAnnotation(): void;
 }
