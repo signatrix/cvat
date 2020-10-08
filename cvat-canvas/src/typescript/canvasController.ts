@@ -33,6 +33,7 @@ export interface CanvasController {
     merge(mergeData: MergeData): void;
     split(splitData: SplitData): void;
     group(groupData: GroupData): void;
+    pointGroup(groupData: GroupData): void;
     enableDrag(x: number, y: number): void;
     drag(x: number, y: number): void;
     disableDrag(): void;
@@ -94,6 +95,10 @@ export class CanvasControllerImpl implements CanvasController {
 
     public group(groupData: GroupData): void {
         this.model.group(groupData);
+    }
+
+    public pointGroup(groupData: GroupData): void {
+        this.model.pointGroup(groupData);
     }
 
     public get geometry(): Geometry {

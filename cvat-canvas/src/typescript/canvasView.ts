@@ -15,6 +15,7 @@ import { EditHandler, EditHandlerImpl } from './editHandler';
 import { MergeHandler, MergeHandlerImpl } from './mergeHandler';
 import { SplitHandler, SplitHandlerImpl } from './splitHandler';
 import { GroupHandler, GroupHandlerImpl } from './groupHandler';
+import { PointGroupHandler, PointGroupHandlerImpl } from './pointGroupHandler';
 import { ZoomHandler, ZoomHandlerImpl } from './zoomHandler';
 import { AutoborderHandler, AutoborderHandlerImpl } from './autoborderHandler';
 import consts from './consts';
@@ -70,6 +71,7 @@ export class CanvasViewImpl implements CanvasView, Listener {
     private mergeHandler: MergeHandler;
     private splitHandler: SplitHandler;
     private groupHandler: GroupHandler;
+    private pointGroupHandler: PointGroupHandler;
     private zoomHandler: ZoomHandler;
     private autoborderHandler: AutoborderHandler;
     private activeElement: ActiveElement;
@@ -210,6 +212,33 @@ export class CanvasViewImpl implements CanvasView, Listener {
         }
 
         this.mode = Mode.IDLE;
+    }
+
+    private onMultipleEditsDone(states: any): void {
+        if (states) {
+            const event: CustomEvent = new CustomEvent('canvas.multiple-edits', {
+                bubbles: false,
+                cancelable: true,
+                detail: {
+                    states,
+                },
+            });
+
+            this.canvas.dispatchEvent(event);
+        } else {
+            const event: CustomEvent = new CustomEvent('canvas.canceled', {
+                bubbles: false,
+                cancelable: true,
+            });
+
+            this.canvas.dispatchEvent(event);
+
+            this.controller.pointGroup({
+                enabled: false,
+            });
+
+            this.mode = Mode.IDLE;
+        }
     }
 
     private onMergeDone(objects: any[]| null, duration?: number): void {
@@ -371,6 +400,7 @@ export class CanvasViewImpl implements CanvasView, Listener {
 
         // Transform handlers
         this.drawHandler.transform(this.geometry);
+        this.pointGroupHandler.transform(this.geometry);
         this.editHandler.transform(this.geometry);
         this.zoomHandler.transform(this.geometry);
     }
@@ -438,6 +468,7 @@ export class CanvasViewImpl implements CanvasView, Listener {
         // Transform handlers
         this.drawHandler.transform(this.geometry);
         this.editHandler.transform(this.geometry);
+        this.pointGroupHandler.transform(this.geometry);
         this.autoborderHandler.transform(this.geometry);
     }
 
@@ -841,6 +872,12 @@ export class CanvasViewImpl implements CanvasView, Listener {
             this.onFindObject.bind(this),
             this.adoptedContent,
         );
+        this.pointGroupHandler = new PointGroupHandlerImpl(
+            this.onMultipleEditsDone.bind(this),
+            (): any[] => this.controller.objects,
+            this.onFindObject.bind(this),
+            this.adoptedContent,
+        );
         this.zoomHandler = new ZoomHandlerImpl(
             this.onFocusRegion.bind(this),
             this.adoptedContent,
@@ -995,6 +1032,9 @@ export class CanvasViewImpl implements CanvasView, Listener {
             if (this.mode === Mode.GROUP) {
                 this.groupHandler.resetSelectedObjects();
             }
+            if (this.mode === Mode.POINT_GROUP) {
+                this.pointGroupHandler.resetSelectedObjects();
+            }
             this.setupObjects(this.controller.objects);
             if (this.mode === Mode.MERGE) {
                 this.mergeHandler.repeatSelection();
@@ -1090,6 +1130,16 @@ export class CanvasViewImpl implements CanvasView, Listener {
                 this.canvas.style.cursor = '';
             }
             this.groupHandler.group(data);
+        } else if (reason === UpdateReasons.POINT_GROUP) {
+            const data: GroupData = this.controller.groupData;
+            if (data.enabled) {
+                this.canvas.style.cursor = 'copy';
+                this.mode = Mode.POINT_GROUP;
+            } else {
+                this.canvas.style.cursor = '';
+            }
+            this.pointGroupHandler.transform(this.geometry);
+            this.pointGroupHandler.group(data);
         } else if (reason === UpdateReasons.SELECT) {
             if (this.mode === Mode.MERGE) {
                 this.mergeHandler.select(this.controller.selected);
@@ -1097,6 +1147,9 @@ export class CanvasViewImpl implements CanvasView, Listener {
                 this.splitHandler.select(this.controller.selected);
             } else if (this.mode === Mode.GROUP) {
                 this.groupHandler.select(this.controller.selected);
+            } else if (this.mode === Mode.POINT_GROUP) {
+                this.pointGroupHandler.transform(this.geometry);
+                this.pointGroupHandler.select(this.controller.selected);
             }
         } else if (reason === UpdateReasons.CANCEL) {
             if (this.mode === Mode.DRAW) {
@@ -1107,6 +1160,8 @@ export class CanvasViewImpl implements CanvasView, Listener {
                 this.splitHandler.cancel();
             } else if (this.mode === Mode.GROUP) {
                 this.groupHandler.cancel();
+            } else if (this.mode === Mode.POINT_GROUP) {
+                this.pointGroupHandler.cancel();
             } else if (this.mode === Mode.EDIT) {
                 this.editHandler.cancel();
             } else if (this.mode === Mode.DRAG_CANVAS) {

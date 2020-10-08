@@ -20,22 +20,22 @@ export interface GroupHandler {
 export class GroupHandlerImpl implements GroupHandler {
     // callback is used to notify about grouping end
     private onGroupDone: (objects?: any[]) => void;
-    private getStates: () => any[];
+    protected getStates: () => any[];
     private onFindObject: (event: MouseEvent) => void;
     private bindedOnSelectStart: (event: MouseEvent) => void;
     private bindedOnSelectUpdate: (event: MouseEvent) => void;
     private bindedOnSelectStop: (event: MouseEvent) => void;
-    private selectionRect: SVG.Rect;
-    private startSelectionPoint: {
+    protected selectionRect: SVG.Rect;
+    protected startSelectionPoint: {
         x: number;
         y: number;
     };
-    private canvas: SVG.Container;
-    private initialized: boolean;
-    private statesToBeGroupped: any[];
-    private highlightedShapes: Record<number, SVG.Shape>;
+    protected canvas: SVG.Container;
+    protected initialized: boolean;
+    protected statesToBeGroupped: any[];
+    protected highlightedShapes: Record<number, SVG.Shape>;
 
-    private getSelectionBox(event: MouseEvent): {
+    protected getSelectionBox(event: MouseEvent): {
         xtl: number;
         ytl: number;
         xbr: number;
@@ -58,7 +58,7 @@ export class GroupHandlerImpl implements GroupHandler {
         };
     }
 
-    private onSelectStart(event: MouseEvent): void {
+    protected onSelectStart(event: MouseEvent): void {
         if (!this.selectionRect) {
             const point = translateToSVG(
                 this.canvas.node as any as SVGSVGElement,
@@ -74,7 +74,7 @@ export class GroupHandlerImpl implements GroupHandler {
         }
     }
 
-    private onSelectUpdate(event: MouseEvent): void {
+    protected onSelectUpdate(event: MouseEvent): void {
         // called on mousemove
         if (this.selectionRect) {
             const box = this.getSelectionBox(event);
@@ -88,7 +88,7 @@ export class GroupHandlerImpl implements GroupHandler {
         }
     }
 
-    private onSelectStop(event: MouseEvent): void {
+    protected onSelectStop(event: MouseEvent): void {
         // called on mouseup, mouseleave
         if (this.selectionRect) {
             this.selectionRect.remove();
@@ -117,7 +117,7 @@ export class GroupHandlerImpl implements GroupHandler {
         }
     }
 
-    private release(): void {
+    protected release(): void {
         this.canvas.node.removeEventListener('click', this.onFindObject);
         this.canvas.node.removeEventListener('mousedown', this.bindedOnSelectStart);
         this.canvas.node.removeEventListener('mousemove', this.bindedOnSelectUpdate);
@@ -141,7 +141,7 @@ export class GroupHandlerImpl implements GroupHandler {
         this.initialized = true;
     }
 
-    private closeGrouping(): void {
+    protected closeGrouping(): void {
         if (this.initialized) {
             const { statesToBeGroupped } = this;
             this.release();

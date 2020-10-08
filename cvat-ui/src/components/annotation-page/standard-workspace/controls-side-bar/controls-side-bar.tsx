@@ -23,6 +23,7 @@ import DrawCuboidControl from './draw-cuboid-control';
 import SetupTagControl from './setup-tag-control';
 import MergeControl from './merge-control';
 import GroupControl from './group-control';
+import PointGroupControl from './point-group-control';
 import SplitControl from './split-control';
 import TemplateControl from './template-control';
 
@@ -37,6 +38,7 @@ interface Props {
 
     mergeObjects(enabled: boolean): void;
     groupObjects(enabled: boolean): void;
+    pointGroupObjects(enabled: boolean): void;
     splitTrack(enabled: boolean): void;
     rotateFrame(rotation: Rotation): void;
     repeatDrawShape(): void;
@@ -55,6 +57,7 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
         activeControl,
         mergeObjects,
         groupObjects,
+        pointGroupObjects,
         splitTrack,
         rotateFrame,
         repeatDrawShape,
@@ -246,6 +249,13 @@ export default function ControlsSideBarComponent(props: Props): JSX.Element {
                 canvasInstance={canvasInstance}
                 activeControl={activeControl}
                 groupObjects={groupObjects}
+            />
+            <PointGroupControl
+                switchGroupShortcut={normalizedKeyMap.SWITCH_GROUP_MODE}
+                resetGroupShortcut={normalizedKeyMap.RESET_GROUP}
+                canvasInstance={canvasInstance}
+                activeControl={activeControl}
+                pointGroupObjects={pointGroupObjects}
             />
             <SplitControl
                 canvasInstance={canvasInstance}

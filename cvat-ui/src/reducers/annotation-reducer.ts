@@ -485,6 +485,23 @@ export default (state = defaultState, action: AnyAction): AnnotationState => {
                 },
             };
         }
+        case AnnotationActionTypes.POINT_GROUP_OBJECTS: {
+            const { enabled } = action.payload;
+            const activeControl = enabled
+                ? ActiveControl.POINT_GROUP : ActiveControl.CURSOR;
+
+            return {
+                ...state,
+                annotations: {
+                    ...state.annotations,
+                    activatedStateID: null,
+                },
+                canvas: {
+                    ...state.canvas,
+                    activeControl,
+                },
+            };
+        }
         case AnnotationActionTypes.SPLIT_TRACK: {
             const { enabled } = action.payload;
             const activeControl = enabled
