@@ -135,6 +135,10 @@ class CanvasImpl implements Canvas {
         this.model.group(groupData);
     }
 
+    public pointGroup(groupData: GroupData): void {
+        this.model.pointGroup(groupData);
+    }
+
     public merge(mergeData: MergeData): void {
         this.model.merge(mergeData);
     }

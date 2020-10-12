@@ -71,8 +71,7 @@ export interface DrawData {
         vertices: Point2D[];
         labels: number[];
         edges: Edge[];
-    }
-    redraw?: number;
+    };
 }
 
 type Point2D = [number, number];
@@ -115,6 +114,7 @@ export enum UpdateReasons {
     MERGE = 'merge',
     SPLIT = 'split',
     GROUP = 'group',
+    POINT_GROUP = 'point_group',
     SELECT = 'select',
     CANCEL = 'cancel',
     BITMAP = 'bitmap',
@@ -132,6 +132,7 @@ export enum Mode {
     MERGE = 'merge',
     SPLIT = 'split',
     GROUP = 'group',
+    POINT_GROUP = 'point_group',
     DRAG_CANVAS = 'drag_canvas',
     ZOOM_CANVAS = 'zoom_canvas',
 }
@@ -166,6 +167,7 @@ export interface CanvasModel {
 
     draw(drawData: DrawData): void;
     group(groupData: GroupData): void;
+    pointGroup(groupData: GroupData): void;
     split(splitData: SplitData): void;
     merge(mergeData: MergeData): void;
     select(objectState: any): void;
@@ -532,6 +534,19 @@ export class CanvasModelImpl extends MasterImpl implements CanvasModel {
 
         this.data.groupData = { ...groupData };
         this.notify(UpdateReasons.GROUP);
+    }
+
+    public pointGroup(groupData: GroupData): void {
+        if (![Mode.IDLE, Mode.POINT_GROUP].includes(this.data.mode)) {
+            throw Error(`Canvas is busy. Action: ${this.data.mode}`);
+        }
+
+        if (this.data.groupData.enabled === groupData.enabled) {
+            return;
+        }
+
+        this.data.groupData = { ...groupData };
+        this.notify(UpdateReasons.POINT_GROUP);
     }
 
     public merge(mergeData: MergeData): void {

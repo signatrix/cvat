@@ -54,14 +54,13 @@ interface EdgeTemplate {
 
 const createLabel = (args: LabelData) => new cvat.classes.Label(args);
 
-const createPoint = ({ label, ...other }: PointData) =>
-    new cvat.classes.ObjectState({
-        label: createLabel(label),
-        occluded: false,
-        objectType: "track",
-        shapeType: "points",
-        ...other
-    });
+const createPoint = ({ label, ...other }: PointData) => new cvat.classes.ObjectState({
+    label: createLabel(label),
+    occluded: false,
+    objectType: 'track',
+    shapeType: 'points',
+    ...other,
+});
 
 interface Props {
     sidebarCollapsed: boolean;
@@ -130,8 +129,11 @@ interface Props {
     onSwitchGrid(enabled: boolean): void;
     onSwitchAutomaticBordering(enabled: boolean): void;
     onFetchAnnotation(): void;
-    onCreateAnnotationsAndGrouping(sessionInstance: any, frame: number, states: any[]): Promise<void>;
-    onFetchAnnotation(): void;
+    onCreateAnnotationsAndGrouping(
+        sessionInstance: any,
+        frame: number,
+        states: any[],
+    ): Promise<void>;
 }
 
 export default class CanvasWrapperComponent extends React.PureComponent<Props> {
@@ -264,8 +266,8 @@ export default class CanvasWrapperComponent extends React.PureComponent<Props> {
         }
 
         if (prevProps.frame !== frameData.number
-            && ((resetZoom && workspace !== Workspace.ATTRIBUTE_ANNOTATION) ||
-            workspace === Workspace.TAG_ANNOTATION)
+            && ((resetZoom && workspace !== Workspace.ATTRIBUTE_ANNOTATION)
+                || workspace === Workspace.TAG_ANNOTATION)
         ) {
             canvasInstance.html().addEventListener('canvas.setup', () => {
                 canvasInstance.fit();
@@ -313,6 +315,7 @@ export default class CanvasWrapperComponent extends React.PureComponent<Props> {
         canvasInstance.html().removeEventListener('contextmenu', this.onCanvasContextMenu);
         canvasInstance.html().removeEventListener('canvas.editstart', this.onCanvasEditStart);
         canvasInstance.html().removeEventListener('canvas.edited', this.onCanvasEditDone);
+        canvasInstance.html().removeEventListener('canvas.multiple-edits', this.onCanvasMultipleEditsDone);
         canvasInstance.html().removeEventListener('canvas.dragstart', this.onCanvasDragStart);
         canvasInstance.html().removeEventListener('canvas.dragstop', this.onCanvasDragDone);
         canvasInstance.html().removeEventListener('canvas.zoomstart', this.onCanvasZoomStart);
@@ -373,7 +376,7 @@ export default class CanvasWrapperComponent extends React.PureComponent<Props> {
                     label: { id: label },
                     zOrder,
                     frame,
-                })
+                });
             });
 
             onCreateAnnotationsAndGrouping(jobInstance, frame, states);
@@ -563,6 +566,14 @@ export default class CanvasWrapperComponent extends React.PureComponent<Props> {
         } = event.detail;
         state.points = points;
         onUpdateAnnotations([state]);
+    };
+
+    private onCanvasMultipleEditsDone = (event: any): void => {
+        const {
+            onUpdateAnnotations,
+        } = this.props;
+
+        onUpdateAnnotations(event.detail.states);
     };
 
     private onCanvasDragStart = (): void => {
@@ -759,6 +770,7 @@ export default class CanvasWrapperComponent extends React.PureComponent<Props> {
         canvasInstance.html().addEventListener('contextmenu', this.onCanvasContextMenu);
         canvasInstance.html().addEventListener('canvas.editstart', this.onCanvasEditStart);
         canvasInstance.html().addEventListener('canvas.edited', this.onCanvasEditDone);
+        canvasInstance.html().addEventListener('canvas.multiple-edits', this.onCanvasMultipleEditsDone);
         canvasInstance.html().addEventListener('canvas.dragstart', this.onCanvasDragStart);
         canvasInstance.html().addEventListener('canvas.dragstop', this.onCanvasDragDone);
         canvasInstance.html().addEventListener('canvas.zoomstart', this.onCanvasZoomStart);

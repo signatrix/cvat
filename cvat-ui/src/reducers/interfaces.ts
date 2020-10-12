@@ -280,6 +280,7 @@ export enum ActiveControl {
     DRAW_CUBOID = 'draw_cuboid',
     MERGE = 'merge',
     GROUP = 'group',
+    POINT_GROUP = 'point_group',
     SPLIT = 'split',
     EDIT = 'edit',
 

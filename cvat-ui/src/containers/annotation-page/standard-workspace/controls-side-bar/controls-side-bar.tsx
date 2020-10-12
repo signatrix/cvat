@@ -21,6 +21,7 @@ import {
     saveAnnotationsAsync,
     createAnnotationsAndGroupAsync,
     trackAnnotationsAsync,
+    pointGroupObjects,
 } from 'actions/annotation-actions';
 import ControlsSideBarComponent from 'components/annotation-page/standard-workspace/controls-side-bar/controls-side-bar';
 import { ActiveControl, CombinedState, Rotation } from 'reducers/interfaces';
@@ -42,6 +43,7 @@ interface StateToProps {
 interface DispatchToProps {
     mergeObjects(enabled: boolean): void;
     groupObjects(enabled: boolean): void;
+    pointGroupObjects(enabled: boolean): void;
     splitTrack(enabled: boolean): void;
     rotateFrame(angle: Rotation): void;
     resetGroup(): void;
@@ -103,6 +105,9 @@ function dispatchToProps(dispatch: ThunkDispatch<{}, {}, AnyAction>): DispatchTo
         },
         groupObjects(enabled: boolean): void {
             dispatch(groupObjects(enabled));
+        },
+        pointGroupObjects(enabled: boolean): void {
+            dispatch(pointGroupObjects(enabled));
         },
         splitTrack(enabled: boolean): void {
             dispatch(splitTrack(enabled));

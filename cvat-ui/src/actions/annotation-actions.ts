@@ -128,6 +128,7 @@ export enum AnnotationActionTypes {
     ZOOM_CANVAS = 'ZOOM_CANVAS',
     MERGE_OBJECTS = 'MERGE_OBJECTS',
     GROUP_OBJECTS = 'GROUP_OBJECTS',
+    POINT_GROUP_OBJECTS = 'POINT_GROUP_OBJECTS',
     SPLIT_TRACK = 'SPLIT_TRACK',
     COPY_SHAPE = 'COPY_SHAPE',
     PASTE_SHAPE = 'PASTE_SHAPE',
@@ -1103,6 +1104,15 @@ export function mergeObjects(enabled: boolean): AnyAction {
 export function groupObjects(enabled: boolean): AnyAction {
     return {
         type: AnnotationActionTypes.GROUP_OBJECTS,
+        payload: {
+            enabled,
+        },
+    };
+}
+
+export function pointGroupObjects(enabled: boolean): AnyAction {
+    return {
+        type: AnnotationActionTypes.POINT_GROUP_OBJECTS,
         payload: {
             enabled,
         },
