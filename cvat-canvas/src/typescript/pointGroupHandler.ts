@@ -95,6 +95,15 @@ export class PointGroupHandlerImpl
         this.geometry = geometry;
     }
 
+    public group(groupData: GroupData): void {
+        if (groupData.enabled) {
+            this.initGrouping();
+        } else {
+            this.closeGrouping();
+            this.cancel();
+        }
+    }
+
     protected closeGrouping(): void {
         if (this.selectionRect) {
             (this.selectionRect as any)
@@ -225,5 +234,10 @@ export class PointGroupHandlerImpl
 
             this.isDrawing = false;
         }
+    }
+
+    public cancel(): void {
+        this.release();
+        this.onMultipleEditsDone();
     }
 }

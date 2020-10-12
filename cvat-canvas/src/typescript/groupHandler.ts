@@ -132,7 +132,7 @@ export class GroupHandlerImpl implements GroupHandler {
         };
     }
 
-    private initGrouping(): void {
+    protected initGrouping(): void {
         this.canvas.node.addEventListener('click', this.onFindObject);
         this.canvas.node.addEventListener('mousedown', this.bindedOnSelectStart);
         this.canvas.node.addEventListener('mousemove', this.bindedOnSelectUpdate);
