@@ -94,8 +94,12 @@ def track_points(request):
     tracker = PointsTracker()
     rectangle_tracker = RectangleTracker()
 
-    points_new_shapes = tracker.track_multi_points(task, points_starting_shapes, stop_frame)
-    rectangle_new_shapes = rectangle_tracker.track_rectangles(task, rectangle_starting_shapes, stop_frame)
+    points_new_shapes = tracker\
+        .track_multi_points(task, points_starting_shapes, stop_frame) \
+            if len(points_starting_shapes) > 0 else []
+    rectangle_new_shapes = rectangle_tracker \
+        .track_rectangles(task, rectangle_starting_shapes, stop_frame) \
+            if len(rectangle_starting_shapes) > 0 else []
 
     points_new_shapes = [TrackedShapeSerializer(s).data for s in points_new_shapes]
     rectangle_new_shapes = [TrackedShapeSerializer(s).data for s in rectangle_new_shapes]
